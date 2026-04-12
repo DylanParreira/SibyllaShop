@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock - Sibylla</title>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;800&family=Electrolize:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sib-text:#DBE8FF; --sib-muted:#9fb6d7;
+            --sib-accent1:#40e0ff; --sib-accent2:#4da3ff;
+            --sib-gold:#fada7d; --sib-bg:#0a0e27;
+            --sib-panel:#11162e; --sib-border:rgba(255,255,255,.08);
+            --sib-green:#4fffb0; --sib-red:#ff6b6b; --sib-orange:#ffb347;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Electrolize','Rajdhani',sans-serif; background:var(--sib-bg); color:var(--sib-text); min-height:100vh; }
+
+        header {
+            background:rgba(0,0,0,0.7); backdrop-filter:blur(12px);
+            border-bottom:1px solid rgba(64,224,255,0.2);
+            padding:0 2rem; height:64px;
+            display:flex; align-items:center; justify-content:space-between;
+            position:sticky; top:0; z-index:100;
+        }
+        .header-left { display:flex; align-items:center; gap:1.2rem; }
+        .header-logo { height:36px; }
+        .header-sep  { width:1px; height:28px; background:var(--sib-border); }
+        .header-title { font-family:'Rajdhani',sans-serif; font-size:1.1rem; font-weight:700; letter-spacing:.12em; color:var(--sib-accent1); text-transform:uppercase; }
+        .header-nav { display:flex; gap:.7rem; align-items:center; }
+        .nav-btn {
+            font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.85rem;
+            letter-spacing:.1em; padding:.45rem 1.1rem;
+            border-radius:8px; cursor:pointer; text-decoration:none;
+            transition:all .3s; border:1px solid transparent;
+        }
+        .nav-active { color:var(--sib-accent1); background:rgba(64,224,255,.1); border-color:rgba(64,224,255,.3); }
+        .nav-ghost  { color:var(--sib-muted); border-color:var(--sib-border); }
+        .nav-ghost:hover { color:var(--sib-text); border-color:rgba(255,255,255,.2); }
+        .user-chip { font-family:'Rajdhani',sans-serif; font-size:.8rem; font-weight:700; letter-spacing:.08em; padding:.3rem .8rem; border-radius:20px; background:rgba(64,224,255,.06); border:1px solid rgba(64,224,255,.2); color:var(--sib-accent1); }
+
+        .page-wrapper { max-width:1100px; margin:0 auto; padding:2rem; }
+
+        /* ===== TOOLBAR (search + filters) ===== */
+        .toolbar { margin-bottom:1.5rem; display:flex; flex-direction:column; gap:.9rem; }
+        .search-wrap { position:relative; }
+        .search-input {
+            width:100%; background:rgba(255,255,255,.04); border:1px solid var(--sib-border);
+            border-radius:10px; padding:.7rem 1rem .7rem 2.6rem;
+            font-family:'Electrolize',sans-serif; font-size:.92rem; color:var(--sib-text); outline:none;
+            transition:border-color .3s;
+        }
+        .search-input:focus { border-color:rgba(64,224,255,.4); }
+        .search-input::placeholder { color:rgba(159,182,215,.35); }
+        .search-icon { position:absolute; left:.85rem; top:50%; transform:translateY(-50%); font-size:1rem; opacity:.4; pointer-events:none; }
+        .filters { display:flex; flex-wrap:wrap; gap:.45rem; }
+        .cat-btn {
+            font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.78rem; letter-spacing:.1em;
+            padding:.3rem .9rem; border-radius:20px; cursor:pointer; transition:all .25s;
+            border:1px solid var(--sib-border); color:var(--sib-muted); background:none;
+        }
+        .cat-btn:hover, .cat-btn.active { color:var(--sib-accent1); border-color:rgba(64,224,255,.4); background:rgba(64,224,255,.07); }
+
+        /* ===== SECTION TITRE ===== */
+        .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.2rem; }
+        .section-title {
+            font-family:'Rajdhani',sans-serif; font-size:1.2rem; font-weight:800;
+            letter-spacing:.12em; text-transform:uppercase; color:var(--sib-text);
+            display:flex; align-items:center; gap:.6rem;
+        }
+        .section-title::before { content:''; display:block; width:3px; height:1.2em; background:var(--sib-accent1); border-radius:2px; }
+        .result-count { font-size:.8rem; color:var(--sib-muted); }
+
+        /* ===== CATÉGORIE ===== */
+        .category-block { margin-bottom:2rem; }
+        .category-name {
+            font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700;
+            letter-spacing:.15em; text-transform:uppercase; color:var(--sib-muted);
+            padding:.5rem 0; margin-bottom:.8rem;
+            border-bottom:1px solid var(--sib-border);
+        }
+
+        /* ===== STOCK GRID ===== */
+        .stock-grid {
+            display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:.85rem;
+        }
+
+        /* ===== STOCK CARD ===== */
+        .stock-card {
+            background:var(--sib-panel); border:1px solid var(--sib-border);
+            border-radius:12px; overflow:hidden; display:flex; flex-direction:column;
+            transition:all .25s;
+        }
+        .stock-card:hover { border-color:rgba(255,255,255,.16); transform:translateY(-1px); }
+        .stock-card.disabled { opacity:.45; filter:grayscale(.5); }
+        .stock-card.alert-3 { border-color:rgba(255,107,107,.35); }
+        .stock-card.alert-2 { border-color:rgba(255,179,71,.3); }
+        .stock-card.alert-1 { border-color:rgba(250,218,125,.25); }
+
+        /* Card header */
+        .stock-card-header {
+            display:flex; align-items:flex-start; gap:.75rem;
+            padding:.75rem .9rem;
+            background:rgba(255,255,255,.025);
+            border-bottom:1px solid var(--sib-border);
+        }
+        .stock-card-img {
+            width:80px; height:80px; border-radius:9px; object-fit:cover; flex-shrink:0;
+            border:1px solid var(--sib-border); background:rgba(255,255,255,.04);
+        }
+        .stock-card-img-ph {
+            width:80px; height:80px; border-radius:9px; flex-shrink:0;
+            border:1px solid var(--sib-border); background:rgba(255,255,255,.04);
+            display:flex; align-items:center; justify-content:center; font-size:2rem; opacity:.4;
+        }
+        .stock-card-header-info {
+            flex:1; min-width:0; display:flex; flex-direction:column; gap:.4rem;
+            justify-content:center; padding-top:.1rem;
+        }
+        .stock-card-name {
+            font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700; line-height:1.2;
+            word-break:break-word;
+        }
+
+        /* Alert badges */
+        .alert-badge {
+            font-family:'Rajdhani',sans-serif; font-size:.67rem; font-weight:700; letter-spacing:.08em;
+            padding:.15rem .55rem; border-radius:20px; text-transform:uppercase; white-space:nowrap; flex-shrink:0;
+        }
+        .alert-badge.lvl-3 { color:var(--sib-red);    background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.35); }
+        .alert-badge.lvl-2 { color:var(--sib-orange); background:rgba(255,179,71,.1);  border:1px solid rgba(255,179,71,.3); }
+        .alert-badge.lvl-1 { color:var(--sib-gold);   background:rgba(250,218,125,.08); border:1px solid rgba(250,218,125,.25); }
+        .alert-badge.disabled-badge { color:var(--sib-muted); background:rgba(255,255,255,.04); border:1px solid var(--sib-border); }
+
+        /* Card body */
+        .stock-card-body {
+            padding:.7rem .9rem; flex:1; display:flex; flex-direction:column; gap:.45rem;
+        }
+
+        /* Card footer (reserve) */
+        .stock-card-footer {
+            padding:.45rem .9rem;
+            border-top:1px solid var(--sib-border);
+            background:rgba(255,179,71,.04);
+        }
+
+        /* Quality display */
+        .quality-display { display:flex; flex-direction:column; gap:.35rem; }
+        .best-entry {
+            display:inline-flex; align-items:center; gap:.4rem;
+            font-family:'Rajdhani',sans-serif; font-size:.85rem; font-weight:700;
+            padding:.28rem .75rem; border-radius:20px; align-self:flex-start;
+        }
+        .best-entry.parfait    { color:#fada7d; background:rgba(250,218,125,.1); border:1px solid rgba(250,218,125,.3); }
+        .best-entry.excellent  { color:#4fffb0; background:rgba(79,255,176,.08); border:1px solid rgba(79,255,176,.25); }
+        .best-entry.standard   { color:#DBE8FF; background:rgba(219,232,255,.06); border:1px solid rgba(219,232,255,.15); }
+        .best-entry.mediocre   { color:#ffa500; background:rgba(255,165,0,.08); border:1px solid rgba(255,165,0,.25); }
+        .best-entry.mauvais    { color:#ff6b6b; background:rgba(255,107,107,.08); border:1px solid rgba(255,107,107,.25); }
+
+        .no-stock { font-size:.8rem; color:rgba(159,182,215,.35); font-style:italic; }
+
+        .minor-entry {
+            font-size:.78rem; color:var(--sib-muted);
+            display:inline-flex; align-items:center; gap:.3rem; align-self:flex-start;
+        }
+        .minor-qty { font-weight:600; color:rgba(159,182,215,.7); }
+
+        .reserve-note { font-size:.74rem; color:rgba(255,179,71,.75); }
+
+        /* ===== EMPTY ===== */
+        .empty-block {
+            text-align:center; padding:3rem; color:var(--sib-muted);
+            background:var(--sib-panel); border:1px solid var(--sib-border); border-radius:14px;
+        }
+        .empty-block .ico { font-size:2.5rem; margin-bottom:.8rem; opacity:.4; }
+
+        @media(max-width:600px){ .page-wrapper{padding:1rem;} header{padding:0 1rem;} .header-title{display:none;} .stock-grid{grid-template-columns:1fr 1fr;} }
+        @media(max-width:400px){ .stock-grid{grid-template-columns:1fr;} }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <img class="header-logo" src="https://github.com/DylanParreira/sibylla-assets/blob/main/SibyllaShop.png?raw=true" alt="Sibylla">
+        <div class="header-sep"></div>
+        <div class="header-title">Stock centrale</div>
+    </div>
+    <div class="header-nav">
+        <span class="nav-btn nav-active">📦 Stock</span>
+        <a class="nav-btn nav-ghost" href="<?= appUrl ?>?page=craft&token=<?= vendeurToken ?>">⚙️ Crafting</a>
+        <a class="nav-btn nav-ghost" href="<?= appUrl ?>">← Accueil</a>
+        <span class="user-chip" id="userChip">⏳</span>
+    </div>
+</header>
+
+<div class="page-wrapper">
+    <div class="toolbar">
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" type="text" id="searchInput" placeholder="Rechercher une ressource…" oninput="applyFilters()">
+        </div>
+        <div class="filters" id="categoryFilters">
+            <button class="cat-btn active" data-cat="all" onclick="setCat('all',this)">Toutes</button>
+        </div>
+    </div>
+
+    <div class="section-header">
+        <div class="section-title">Ressources disponibles</div>
+        <span class="result-count" id="resultCount"></span>
+    </div>
+    <div id="stockContainer">
+        <div class="empty-block"><div class="ico">⏳</div><p>Chargement…</p></div>
+    </div>
+</div>
+
+<script>
+    const TOKEN = '<?= vendeurToken ?>';
+    let stockData = null;
+    let activeCat = 'all';
+
+    window.onload = function() {
+        loadUserInfo();
+        loadStock();
+    };
+
+    function loadUserInfo() {
+        // Token already validated server-side, just show session info
+        document.getElementById('userChip').textContent = '🔐 Connecté';
+    }
+
+    function loadStock() {
+        google.script.run
+            .withSuccessHandler(function(data) { stockData = data; buildFilters(); applyFilters(); })
+            .withFailureHandler(function() { showError(); })
+            .getStock();
+    }
+
+    function buildFilters() {
+        if (!stockData || !stockData.categories) return;
+        var container = document.getElementById('categoryFilters');
+        var html = '<button class="cat-btn active" data-cat="all" onclick="setCat(\'all\',this)">Toutes</button>';
+        stockData.categories.forEach(function(cat) {
+            html += '<button class="cat-btn" data-cat="' + esc(cat.name) + '" onclick="setCat(\'' + esc(cat.name) + '\',this)">' + esc(cat.name) + '</button>';
+        });
+        container.innerHTML = html;
+    }
+
+    function setCat(cat, btn) {
+        activeCat = cat;
+        document.querySelectorAll('.cat-btn').forEach(function(b) { b.classList.remove('active'); });
+        if (btn) btn.classList.add('active');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        if (!stockData) return;
+        var search = document.getElementById('searchInput').value.toLowerCase().trim();
+        var container = document.getElementById('stockContainer');
+        var totalVisible = 0;
+        var html = '';
+
+        stockData.categories.forEach(function(cat) {
+            if (activeCat !== 'all' && cat.name !== activeCat) return;
+            var itemsHtml = '';
+            cat.items.forEach(function(item) {
+                if (search && item.name.toLowerCase().indexOf(search) === -1) return;
+                totalVisible++;
+                itemsHtml += renderItem(item);
+            });
+            if (itemsHtml) {
+                html += '<div class="category-block"><div class="category-name">' + esc(cat.name) + '</div><div class="stock-grid">' + itemsHtml + '</div></div>';
+            }
+        });
+
+        document.getElementById('resultCount').textContent = totalVisible > 0 ? totalVisible + ' ressource(s)' : '';
+
+        if (!html) {
+            container.innerHTML = '<div class="empty-block"><div class="ico">🔍</div><p>Aucune ressource trouvée.</p></div>';
+        } else {
+            container.innerHTML = html;
+        }
+    }
+
+    function renderItem(item) {
+        var imgHtml = item.imageUrl
+            ? '<img class="stock-card-img" src="' + esc(item.imageUrl) + '" onerror="this.style.display=\'none\'" alt="">'
+            : '<div class="stock-card-img-ph">📦</div>';
+
+        // Alert badge (dans le header)
+        var badgeHtml = '';
+        if (!item.actif) {
+            badgeHtml = '<span class="alert-badge disabled-badge">○ Off</span>';
+        } else if (item.alertLevel === 3) {
+            badgeHtml = '<span class="alert-badge lvl-3">▲ Critique</span>';
+        } else if (item.alertLevel === 2) {
+            badgeHtml = '<span class="alert-badge lvl-2">▲ Bas</span>';
+        } else if (item.alertLevel === 1) {
+            badgeHtml = '<span class="alert-badge lvl-1">▲ Attention</span>';
+        }
+
+        // Best quality display
+        var qualityHtml = '';
+        if (item.bestEntry) {
+            var ql = getQualiteInfo(item.bestEntry.qualite);
+            qualityHtml += '<span class="best-entry ' + ql.cls + '">★ ' + item.bestEntry.quantite + ' ' + esc(item.bestEntry.unite) + ' · ' + ql.label + '</span>';
+        }
+        if (item.minorTotal > 0) {
+            qualityHtml += '<span class="minor-entry">+ <span class="minor-qty">' + item.minorTotal + 'x</span> qualité moindre</span>';
+        }
+        if (!qualityHtml) {
+            qualityHtml = '<span class="no-stock">Aucun stock</span>';
+        }
+
+        // Reserve footer
+        var footerHtml = item.totalReserve > 0
+            ? '<div class="stock-card-footer"><div class="reserve-note">⏳ ' + item.totalReserve + ' réservé(s) pour des Blueprints en cours</div></div>'
+            : '';
+
+        var alertClass = !item.actif ? ' disabled' : item.alertLevel > 0 ? ' alert-' + item.alertLevel : '';
+
+        return '<div class="stock-card' + alertClass + '">' +
+            '<div class="stock-card-header">' + imgHtml +
+            '<div class="stock-card-header-info">' +
+            '<span class="stock-card-name">' + esc(item.name) + '</span>' +
+            badgeHtml +
+            '</div>' +
+            '</div>' +
+            '<div class="stock-card-body"><div class="quality-display">' + qualityHtml + '</div></div>' +
+            footerHtml +
+            '</div>';
+    }
+
+    function getQualiteInfo(q) {
+        var cls = q>=900?'parfait':q>=750?'excellent':q>=500?'standard':q>=250?'mediocre':'mauvais';
+        return { label: q + '+', cls: cls };
+    }
+
+    function showError() {
+        document.getElementById('stockContainer').innerHTML =
+            '<div class="empty-block"><div class="ico">❌</div><p>Erreur de chargement.</p></div>';
+    }
+
+    function esc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+</script>
+</body>
+</html>

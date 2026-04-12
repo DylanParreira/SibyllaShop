@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion Vendeur - Sibylla</title>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;800&family=Electrolize:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sib-text: #DBE8FF;
+            --sib-muted: #9fb6d7;
+            --sib-accent1: #40e0ff;
+            --sib-accent2: #4da3ff;
+            --sib-gold: #fada7d;
+            --sib-border: rgba(255,255,255,.12);
+            --sib-halo: rgba(64,224,255,.18);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Electrolize', 'Rajdhani', sans-serif;
+            background: #0a0e27;
+            color: var(--sib-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Fond animé */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 20% 30%, rgba(64,224,255,0.06) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 60% at 80% 70%, rgba(77,163,255,0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* ===== RETOUR ACCUEIL ===== */
+        .btn-back {
+            position: fixed;
+            top: 1.2rem;
+            left: 1.5rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--sib-muted);
+            text-decoration: none;
+            letter-spacing: 0.1em;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-back:hover { color: var(--sib-accent1); }
+
+        /* ===== CARD ===== */
+        .login-card {
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, #13193a 0%, #0c1028 100%);
+            border: 1px solid rgba(64, 224, 255, 0.25);
+            border-radius: 20px;
+            padding: 3rem 3.5rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow:
+                0 0 60px rgba(64,224,255,0.05),
+                0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        /* Barre accent top */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--sib-accent1), transparent);
+            border-radius: 0 0 4px 4px;
+        }
+
+        /* ===== EN-TÊTE CARD ===== */
+        .card-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .card-logo {
+            height: 44px;
+            width: auto;
+            margin-bottom: 1.4rem;
+            opacity: 0.95;
+        }
+
+        .card-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.7rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            color: var(--sib-accent1);
+            text-transform: uppercase;
+        }
+
+        .card-sub {
+            font-size: 0.85rem;
+            color: var(--sib-muted);
+            margin-top: 0.4rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* ===== FORMULAIRE ===== */
+        .form-group {
+            margin-bottom: 1.4rem;
+        }
+
+        .form-label {
+            display: block;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.12em;
+            color: var(--sib-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(64,224,255,0.2);
+            border-radius: 10px;
+            padding: 0.85rem 1.1rem;
+            font-family: 'Electrolize', sans-serif;
+            font-size: 0.95rem;
+            color: var(--sib-text);
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+        }
+
+        .form-input::placeholder { color: rgba(159,182,215,0.4); }
+
+        .form-input:focus {
+            border-color: var(--sib-accent1);
+            background: rgba(64,224,255,0.04);
+            box-shadow: 0 0 0 3px rgba(64,224,255,0.1);
+        }
+
+        /* ===== MESSAGE D'ERREUR ===== */
+        .error-msg {
+            display: none;
+            font-size: 0.85rem;
+            color: #ff6b6b;
+            background: rgba(255,107,107,0.08);
+            border: 1px solid rgba(255,107,107,0.25);
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            margin-bottom: 1.4rem;
+            text-align: center;
+        }
+        .error-msg.visible { display: block; }
+
+        /* ===== BOUTON CONNEXION ===== */
+        .btn-login {
+            width: 100%;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 800;
+            font-size: 1.05rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            padding: 0.95rem;
+            background: linear-gradient(135deg, rgba(64,224,255,0.15) 0%, rgba(77,163,255,0.15) 100%);
+            border: 2px solid var(--sib-accent1);
+            border-radius: 12px;
+            color: var(--sib-accent1);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(64,224,255,0.2), rgba(77,163,255,0.2));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .btn-login:hover::before { opacity: 1; }
+        .btn-login:hover {
+            box-shadow: 0 0 25px rgba(64,224,255,0.3);
+            transform: translateY(-1px);
+        }
+        .btn-login:active { transform: translateY(0); }
+
+        .btn-login.loading {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* ===== BOUTON S'INSCRIRE ===== */
+        .btn-register {
+            width: 100%;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: 0.85rem;
+            background: transparent;
+            border: 1px solid rgba(159,182,215,0.25);
+            border-radius: 12px;
+            color: var(--sib-muted);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 0.7rem;
+        }
+        .btn-register:hover {
+            border-color: rgba(159,182,215,0.5);
+            color: var(--sib-text);
+            background: rgba(255,255,255,0.04);
+        }
+
+        /* ===== FOOTER CARD ===== */
+        .card-footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: rgba(159,182,215,0.4);
+            letter-spacing: 0.05em;
+        }
+
+        /* ===== MODAL INSCRIPTION ===== */
+        .modal-inscription {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+        .modal-inscription.active { display: flex; }
+
+        .inscription-box {
+            background: linear-gradient(135deg, #13193a 0%, #0c1028 100%);
+            border: 1px solid rgba(64,224,255,0.3);
+            border-radius: 20px;
+            padding: 3rem 3rem 2.5rem;
+            width: 100%;
+            max-width: 460px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .inscription-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 50%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--sib-gold), transparent);
+        }
+
+        .inscription-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sib-gold);
+            margin-bottom: 1.2rem;
+        }
+
+        .inscription-text {
+            font-size: 0.95rem;
+            color: var(--sib-text);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .discord-tag {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--sib-gold);
+            background: rgba(250,218,125,0.08);
+            border: 1px solid rgba(250,218,125,0.25);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin: 1.2rem 0 1.5rem;
+        }
+
+        .inscription-note {
+            font-size: 0.85rem;
+            color: var(--sib-muted);
+            line-height: 1.7;
+            margin-bottom: 1.8rem;
+        }
+
+        .btn-ok {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.12em;
+            padding: 0.8rem 2.5rem;
+            background: linear-gradient(135deg, rgba(250,218,125,0.15), rgba(250,218,125,0.08));
+            border: 1px solid rgba(250,218,125,0.4);
+            border-radius: 12px;
+            color: var(--sib-gold);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-ok:hover {
+            background: linear-gradient(135deg, rgba(250,218,125,0.25), rgba(250,218,125,0.15));
+            box-shadow: 0 0 20px rgba(250,218,125,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <a href="<?= appUrl ?>" class="btn-back">← Retour à l'accueil</a>
+
+    <div class="login-card">
+
+        <div class="card-header">
+            <img class="card-logo"
+                 src="https://github.com/DylanParreira/sibylla-assets/blob/main/SibyllaShop.png?raw=true"
+                 alt="Sibylla">
+            <div class="card-title">Connexion</div>
+            <div class="card-sub">Accès membres Sibylla</div>
+        </div>
+
+        <div class="error-msg <?= errorMsg ? 'visible' : '' ?>" id="errorMsg"><?= errorMsg || 'Identifiants incorrects. Réessayez.' ?></div>
+
+        <div class="form-group">
+            <label class="form-label" for="username">Nom d'utilisateur</label>
+            <input class="form-input" type="text" id="username" placeholder="Votre pseudo..." autocomplete="username">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="password">Mot de passe</label>
+            <input class="form-input" type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <button class="btn-login" id="btnLogin" onclick="handleLogin()">
+            Se connecter
+        </button>
+
+        <button class="btn-register" onclick="openInscription()">
+            ✍️ S'inscrire
+        </button>
+
+        <div class="card-footer">Accès réservé aux membres enregistrés</div>
+    </div>
+
+    <!-- MODAL INSCRIPTION -->
+    <div class="modal-inscription" id="inscriptionModal">
+        <div class="inscription-box">
+            <div class="inscription-title">📝 Inscription</div>
+
+            <p class="inscription-text">
+                Pour obtenir un accès au site,<br>
+                contacte notre référent communautaire sur Discord
+            </p>
+
+            <div class="discord-tag">💬 @screedwolf</div>
+
+            <p class="inscription-note">
+                Envoie-lui un message privé sur Discord pour obtenir tes identifiants.<br>
+                L'inscription est réservée aux membres actifs de Sibylla.
+            </p>
+
+            <button class="btn-ok" onclick="closeInscription()">✅ Compris</button>
+        </div>
+    </div>
+
+    <script>
+        // Soumission au Enter
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+        function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btnLogin');
+            const errMsg = document.getElementById('errorMsg');
+
+            if (!username || !password) {
+                errMsg.textContent = 'Veuillez remplir tous les champs.';
+                errMsg.classList.add('visible');
+                return;
+            }
+
+            errMsg.classList.remove('visible');
+            btn.classList.add('loading');
+            btn.textContent = 'Connexion…';
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        var dest = '<?= fromPage ?>' || 'vendeur';
+                        window.top.location.href = '<?= appUrl ?>?page=' + dest + '&token=' + result.token;
+                    } else {
+                        errMsg.textContent = result.message || 'Identifiants incorrects.';
+                        errMsg.classList.add('visible');
+                        btn.classList.remove('loading');
+                        btn.textContent = 'Se connecter';
+                    }
+                })
+                .withFailureHandler(function() {
+                    errMsg.textContent = 'Erreur serveur. Réessayez.';
+                    errMsg.classList.add('visible');
+                    btn.classList.remove('loading');
+                    btn.textContent = 'Se connecter';
+                })
+                .loginVendeur(username, password);
+        }
+
+        function openInscription() {
+            document.getElementById('inscriptionModal').classList.add('active');
+        }
+
+        function closeInscription() {
+            document.getElementById('inscriptionModal').classList.remove('active');
+        }
+
+        // Fermer en cliquant dehors
+        document.getElementById('inscriptionModal').addEventListener('click', function(e) {
+            if (e.target === this) closeInscription();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sibylla Shop</title>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;800&family=Electrolize:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sib-text: #DBE8FF;
+            --sib-muted: #9fb6d7;
+            --sib-accent1: #40e0ff;
+            --sib-gold: #fada7d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Electrolize', 'Rajdhani', sans-serif;
+            background: #0a0e27;
+            color: var(--sib-text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .brand {
+            position: fixed;
+            top: 1.2rem;
+            left: 1.5rem;
+            z-index: 100;
+        }
+
+        .brand img { height: 42px; width: auto; }
+
+        .btn-login {
+            position: fixed;
+            top: 1.2rem;
+            right: 1.5rem;
+            z-index: 100;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 0.6rem 1.3rem;
+            background: transparent;
+            border: 2px solid rgba(64, 224, 255, 0.35);
+            border-radius: 20px;
+            color: var(--sib-accent1);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-login:hover {
+            background: rgba(64, 224, 255, 0.1);
+            border-color: var(--sib-accent1);
+            box-shadow: 0 0 20px rgba(64, 224, 255, 0.2);
+        }
+
+        /* ===== SPLIT SCREEN ===== */
+        .split-screen {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        .half {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: flex 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .half::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .half-market::before {
+            background: radial-gradient(ellipse at center, rgba(210, 40, 40, 0.55) 0%, rgba(120, 15, 15, 0.35) 70%);
+        }
+
+        .half-blueprint::before {
+            background: radial-gradient(ellipse at center, rgba(250, 218, 125, 0.45) 0%, rgba(180, 130, 30, 0.3) 70%);
+        }
+
+        .split-screen.hover-market .half-market { flex: 1.45; }
+        .split-screen.hover-market .half-market::before { opacity: 1; }
+        .split-screen.hover-market .half-blueprint { flex: 0.55; }
+
+        .split-screen.hover-blueprint .half-blueprint { flex: 1.45; }
+        .split-screen.hover-blueprint .half-blueprint::before { opacity: 1; }
+        .split-screen.hover-blueprint .half-market { flex: 0.55; }
+
+        .half-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .split-screen.hover-market .half-market .half-content { transform: scale(1.08); }
+        .split-screen.hover-blueprint .half-blueprint .half-content { transform: scale(1.08); }
+
+        .half-icon {
+            font-size: 5.5rem;
+            margin-bottom: 1.2rem;
+            display: block;
+            transition: filter 0.4s;
+        }
+
+        .half-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 3.2rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            transition: text-shadow 0.4s;
+        }
+
+        .half-market .half-title { color: #ff6b6b; }
+        .half-blueprint .half-title { color: var(--sib-gold); }
+
+        .split-screen.hover-market .half-market .half-title {
+            text-shadow: 0 0 30px rgba(255, 80, 80, 0.9), 0 0 70px rgba(200, 30, 30, 0.5);
+        }
+
+        .split-screen.hover-blueprint .half-blueprint .half-title {
+            text-shadow: 0 0 30px rgba(250, 218, 125, 0.9), 0 0 70px rgba(200, 150, 40, 0.5);
+        }
+
+        .half-sub {
+            font-size: 1rem;
+            color: var(--sib-muted);
+            margin-top: 0.7rem;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.35s, transform 0.35s;
+        }
+
+        .split-screen.hover-market .half-market .half-sub,
+        .split-screen.hover-blueprint .half-blueprint .half-sub {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .click-hint {
+            margin-top: 1.8rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            opacity: 0;
+            transition: opacity 0.35s 0.05s;
+            text-transform: uppercase;
+        }
+
+        .half-market .click-hint { color: rgba(255, 107, 107, 0.7); }
+        .half-blueprint .click-hint { color: rgba(250, 218, 125, 0.7); }
+
+        .split-screen.hover-market .half-market .click-hint,
+        .split-screen.hover-blueprint .half-blueprint .click-hint {
+            opacity: 1;
+        }
+
+        /* Connexion requise badge */
+        .auth-required {
+            margin-top: 0.7rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(250, 218, 125, 0.4);
+            opacity: 0;
+            transition: opacity 0.35s;
+        }
+        .split-screen.hover-blueprint .half-blueprint .auth-required { opacity: 1; }
+
+        /* Séparateur central */
+        .divider {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                transparent 0%,
+                rgba(255, 255, 255, 0.08) 20%,
+                rgba(255, 255, 255, 0.15) 50%,
+                rgba(255, 255, 255, 0.08) 80%,
+                transparent 100%
+            );
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .vs-badge {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .vs-badge img {
+            height: 52px;
+            width: auto;
+            opacity: 0.85;
+            display: block;
+            margin: 0 auto 0.6rem;
+        }
+
+        .vs-or {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="brand">
+        <img src="https://github.com/DylanParreira/sibylla-assets/blob/main/SibyllaShop.png?raw=true" alt="Sibylla">
+    </div>
+
+    <a href="<?= appUrl ?>?page=login" class="btn-login">Connexion</a>
+
+    <div class="split-screen" id="splitScreen">
+
+        <div class="divider"></div>
+
+        <div class="vs-badge">
+            <img src="https://github.com/DylanParreira/sibylla-assets/blob/main/SibyllaShop.png?raw=true" alt="Sibylla">
+        </div>
+
+        <!-- MARKET -->
+        <a class="half half-market"
+           href="<?= appUrl ?>?page=market"
+           onmouseenter="setHover('market')"
+           onmouseleave="clearHover()"
+           style="text-decoration:none;">
+            <div class="half-content">
+                <span class="half-icon">🛒</span>
+                <div class="half-title">MARKET</div>
+                <div class="half-sub">Acheter & vendre des items</div>
+                <div class="click-hint">▶ Entrer</div>
+            </div>
+        </a>
+
+        <!-- CRAFTING (connexion requise) -->
+        <a class="half half-blueprint"
+           href="<?= appUrl ?>?page=login&from=stock"
+           onmouseenter="setHover('blueprint')"
+           onmouseleave="clearHover()"
+           style="text-decoration:none;">
+            <div class="half-content">
+                <span class="half-icon">⚙️</span>
+                <div class="half-title">CRAFTING</div>
+                <div class="half-sub">Stock & demandes de crafting</div>
+                <div class="auth-required">🔐 Connexion requise</div>
+                <div class="click-hint">▶ Entrer</div>
+            </div>
+        </a>
+
+    </div>
+
+    <script>
+        function setHover(side) {
+            const s = document.getElementById('splitScreen');
+            s.className = 'split-screen hover-' + side;
+        }
+
+        function clearHover() {
+            document.getElementById('splitScreen').className = 'split-screen';
+        }
+    </script>
+</body>
+</html>

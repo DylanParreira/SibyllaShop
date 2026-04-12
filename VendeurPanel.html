@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion Vendeur - Sibylla</title>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;800&family=Electrolize:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sib-text: #DBE8FF;
+            --sib-muted: #9fb6d7;
+            --sib-accent1: #40e0ff;
+            --sib-accent2: #4da3ff;
+            --sib-gold: #fada7d;
+            --sib-bg: #0a0e27;
+            --sib-panel: #11162e;
+            --sib-border: rgba(255,255,255,.08);
+            --sib-red: #ff6b6b;
+            --sib-green: #4fffb0;
+            --sib-orange: #ffb347;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Electrolize', 'Rajdhani', sans-serif;
+            background: var(--sib-bg);
+            color: var(--sib-text);
+            min-height: 100vh;
+        }
+
+        /* ========== HEADER ========== */
+        header {
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(64,224,255,0.2);
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 1.2rem; }
+        .header-logo { height: 36px; width: auto; }
+        .header-sep { width: 1px; height: 28px; background: var(--sib-border); }
+
+        .header-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: var(--sib-accent1);
+            text-transform: uppercase;
+        }
+
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+
+        .vendor-name { font-size: 0.9rem; color: var(--sib-muted); }
+        .vendor-name span { color: var(--sib-text); font-weight: 600; }
+
+        .btn-logout {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            padding: 0.45rem 1rem;
+            background: transparent;
+            border: 1px solid rgba(255,107,107,0.35);
+            border-radius: 8px;
+            color: var(--sib-red);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .btn-logout:hover { background: rgba(255,107,107,0.1); border-color: var(--sib-red); }
+
+        /* ========== LAYOUT ========== */
+        .page-wrapper { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+        /* ========== STATS ========== */
+        .stats-band {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--sib-panel);
+            border: 1px solid var(--sib-border);
+            border-radius: 14px;
+            padding: 1.2rem 1.4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+        }
+        .stat-card.c-total::before  { background: linear-gradient(90deg, transparent, var(--sib-accent2), transparent); }
+        .stat-card.c-dispo::before  { background: linear-gradient(90deg, transparent, var(--sib-green), transparent); }
+        .stat-card.c-reserve::before{ background: linear-gradient(90deg, transparent, var(--sib-orange), transparent); }
+        .stat-card.c-vendu::before  { background: linear-gradient(90deg, transparent, var(--sib-muted), transparent); }
+
+        .stat-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--sib-muted);
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+        }
+        .stat-card.c-total  .stat-value { color: var(--sib-accent2); }
+        .stat-card.c-dispo  .stat-value { color: var(--sib-green); }
+        .stat-card.c-reserve .stat-value { color: var(--sib-orange); }
+        .stat-card.c-vendu  .stat-value { color: var(--sib-muted); }
+
+        /* ========== SECTION TITRE ========== */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.2rem;
+        }
+        .section-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sib-text);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 3px;
+            height: 1.2em;
+            background: var(--sib-accent1);
+            border-radius: 2px;
+        }
+
+        .btn-add {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+            padding: 0.6rem 1.4rem;
+            background: linear-gradient(135deg, rgba(64,224,255,0.15), rgba(77,163,255,0.1));
+            border: 1px solid var(--sib-accent1);
+            border-radius: 10px;
+            color: var(--sib-accent1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-add:hover {
+            background: linear-gradient(135deg, rgba(64,224,255,0.25), rgba(77,163,255,0.2));
+            box-shadow: 0 0 16px rgba(64,224,255,0.2);
+        }
+
+        /* ========== ITEMS LIST ========== */
+        .items-list { display: flex; flex-direction: column; gap: 0.8rem; }
+
+        .item-row {
+            background: var(--sib-panel);
+            border: 1px solid var(--sib-border);
+            border-radius: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 1.2rem;
+            padding: 1.2rem 1.4rem;
+            transition: border-color 0.25s;
+        }
+        .item-row:hover { border-color: rgba(255,255,255,0.15); }
+
+        .item-img {
+            width: 64px;
+            height: 64px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 1px solid var(--sib-border);
+            background: rgba(255,255,255,0.04);
+        }
+        .item-img-placeholder {
+            width: 64px;
+            height: 64px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            border: 1px solid var(--sib-border);
+            background: rgba(255,255,255,0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            opacity: 0.4;
+        }
+
+        .item-body { flex: 1; min-width: 0; }
+
+        .item-top {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.4rem;
+        }
+
+        .item-name {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--sib-text);
+        }
+
+        .badge {
+            display: inline-block;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+        .badge-dispo   { color: var(--sib-green);  background: rgba(79,255,176,0.1);  border: 1px solid rgba(79,255,176,0.3); }
+        .badge-reserve { color: var(--sib-orange); background: rgba(255,179,71,0.1);  border: 1px solid rgba(255,179,71,0.3); }
+        .badge-vendu   { color: var(--sib-muted);  background: rgba(255,255,255,0.05); border: 1px solid var(--sib-border); }
+        .badge-vente   { color: var(--sib-accent1); background: rgba(64,224,255,0.08); border: 1px solid rgba(64,224,255,0.2); }
+        .badge-recherche{ color: var(--sib-gold);  background: rgba(250,218,125,0.08); border: 1px solid rgba(250,218,125,0.25); }
+
+        .item-meta {
+            font-size: 0.85rem;
+            color: var(--sib-muted);
+            margin-bottom: 0.35rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1.2rem;
+            align-items: center;
+        }
+        .item-prix {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--sib-gold);
+        }
+
+        .item-desc {
+            font-size: 0.83rem;
+            color: rgba(159,182,215,0.65);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .item-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            flex-shrink: 0;
+            align-items: flex-end;
+        }
+
+        .btn-action {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            padding: 0.35rem 0.85rem;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+        .btn-edit    { color: var(--sib-accent2); background: rgba(77,163,255,0.1); border-color: rgba(77,163,255,0.25); }
+        .btn-edit:hover { background: rgba(77,163,255,0.2); border-color: var(--sib-accent2); }
+        .btn-reserve { color: var(--sib-orange); background: rgba(255,179,71,0.1); border-color: rgba(255,179,71,0.25); }
+        .btn-reserve:hover { background: rgba(255,179,71,0.2); border-color: var(--sib-orange); }
+        .btn-vendu   { color: var(--sib-green); background: rgba(79,255,176,0.1); border-color: rgba(79,255,176,0.25); }
+        .btn-vendu:hover { background: rgba(79,255,176,0.2); border-color: var(--sib-green); }
+        .btn-annuler { color: var(--sib-muted); background: rgba(255,255,255,0.05); border-color: var(--sib-border); }
+        .btn-annuler:hover { background: rgba(255,255,255,0.1); color: var(--sib-text); }
+        .btn-delete  { color: var(--sib-red); background: rgba(255,107,107,0.1); border-color: rgba(255,107,107,0.25); }
+        .btn-delete:hover { background: rgba(255,107,107,0.2); border-color: var(--sib-red); }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            text-align: center;
+            padding: 3.5rem 2rem;
+            color: var(--sib-muted);
+            background: var(--sib-panel);
+            border: 1px solid var(--sib-border);
+            border-radius: 14px;
+        }
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+        .empty-state p { font-size: 0.95rem; opacity: 0.7; }
+
+        /* ========== MODAL ========== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal-box {
+            background: linear-gradient(135deg, #13193a 0%, #0c1028 100%);
+            border: 1px solid rgba(64,224,255,0.3);
+            border-radius: 18px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 560px;
+            max-height: 92vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .modal-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 50%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--sib-accent1), transparent);
+        }
+
+        .modal-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--sib-accent1);
+            margin-bottom: 2rem;
+        }
+        .modal-close {
+            position: absolute;
+            top: 1.2rem; right: 1.5rem;
+            background: none;
+            border: none;
+            color: var(--sib-muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+        .modal-close:hover { color: var(--sib-text); }
+
+        /* ========== FORM ========== */
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.1rem;
+        }
+        .modal-grid .full { grid-column: 1 / -1; }
+
+        .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+
+        .form-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sib-muted);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(64,224,255,0.15);
+            border-radius: 9px;
+            padding: 0.75rem 1rem;
+            font-family: 'Electrolize', sans-serif;
+            font-size: 0.9rem;
+            color: var(--sib-text);
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-select { cursor: pointer; }
+        select.form-input, select.form-select {
+            background-color:#0d1226; color:#DBE8FF; color-scheme:dark;
+            -webkit-appearance:none; appearance:none;
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239fb6d7'/%3E%3C/svg%3E");
+            background-repeat:no-repeat; background-position:right .75rem center; padding-right:2.2rem;
+        }
+        select.form-input option, select.form-select option { background:#0d1226 !important; color:#DBE8FF !important; }
+        .form-textarea { resize: vertical; min-height: 80px; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: var(--sib-accent1);
+            box-shadow: 0 0 0 3px rgba(64,224,255,0.08);
+        }
+        .form-input::placeholder, .form-textarea::placeholder {
+            color: rgba(159,182,215,0.35);
+        }
+
+        /* Radio type annonce */
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(64,224,255,0.15);
+            border-radius: 9px;
+        }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--sib-text);
+        }
+        .radio-label input[type="radio"] { accent-color: var(--sib-accent1); }
+
+        /* Checkbox prix unité */
+        .check-label {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            cursor: pointer;
+            font-size: 0.88rem;
+            color: var(--sib-muted);
+            padding: 0.5rem 0;
+        }
+        .check-label input[type="checkbox"] { accent-color: var(--sib-accent1); width: 1rem; height: 1rem; }
+
+        /* Preview image */
+        .img-preview {
+            display: none;
+            width: 100%;
+            max-height: 120px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid var(--sib-border);
+            margin-top: 0.4rem;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.8rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .btn-cancel {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+            padding: 0.7rem 1.5rem;
+            background: transparent;
+            border: 1px solid var(--sib-border);
+            border-radius: 10px;
+            color: var(--sib-muted);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-cancel:hover { border-color: rgba(255,255,255,0.2); color: var(--sib-text); }
+
+        .btn-save {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 800;
+            font-size: 0.9rem;
+            letter-spacing: 0.12em;
+            padding: 0.7rem 1.8rem;
+            background: linear-gradient(135deg, rgba(64,224,255,0.18), rgba(77,163,255,0.14));
+            border: 1px solid var(--sib-accent1);
+            border-radius: 10px;
+            color: var(--sib-accent1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-save:hover { box-shadow: 0 0 20px rgba(64,224,255,0.25); }
+        .btn-save:disabled { opacity: 0.5; pointer-events: none; }
+
+        /* ========== MODAL RÈGLEMENT ========== */
+        .modal-reglement {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 600;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+        .modal-reglement.active { display: flex; }
+
+        .reglement-box {
+            background: linear-gradient(135deg, #13193a 0%, #0c1028 100%);
+            border: 1px solid rgba(64,224,255,0.3);
+            border-radius: 18px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 660px;
+            max-height: 88vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        .reglement-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 50%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--sib-accent1), transparent);
+        }
+
+        .reglement-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--sib-accent1);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .reglement-body { color: var(--sib-text); line-height: 1.8; font-size: 0.92rem; }
+        .reglement-body h3 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.05rem;
+            color: var(--sib-accent1);
+            margin: 1.4rem 0 0.6rem;
+        }
+        .reglement-body ul { margin-left: 1.4rem; margin-bottom: 0.8rem; }
+        .reglement-body li { margin-bottom: 0.35rem; }
+        .reglement-warn {
+            margin-top: 1.5rem;
+            color: var(--sib-gold);
+            font-weight: 700;
+        }
+
+        .reglement-footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn-accept {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 800;
+            font-size: 1rem;
+            letter-spacing: 0.15em;
+            padding: 0.9rem 3rem;
+            background: linear-gradient(135deg, rgba(64,224,255,0.18), rgba(77,163,255,0.14));
+            border: 2px solid var(--sib-accent1);
+            border-radius: 12px;
+            color: var(--sib-accent1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-accept:hover { box-shadow: 0 0 25px rgba(64,224,255,0.3); }
+        .btn-accept:disabled { opacity: 0.5; pointer-events: none; }
+
+        /* ========== TOAST ========== */
+        .toast {
+            position: fixed;
+            bottom: 2rem; right: 2rem;
+            z-index: 1000;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 0.08em;
+            padding: 0.9rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+            pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: rgba(79,255,176,0.12); border: 1px solid rgba(79,255,176,0.4); color: var(--sib-green); }
+        .toast.error   { background: rgba(255,107,107,0.12); border: 1px solid rgba(255,107,107,0.4); color: var(--sib-red); }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 900px) {
+            .stats-band { grid-template-columns: repeat(2, 1fr); }
+            .item-row { flex-wrap: wrap; }
+            .item-actions { flex-direction: row; flex-wrap: wrap; width: 100%; }
+        }
+        @media (max-width: 600px) {
+            .page-wrapper { padding: 1rem; }
+            .modal-grid { grid-template-columns: 1fr; }
+            header { padding: 0 1rem; }
+            .vendor-name { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <img class="header-logo"
+                 src="https://github.com/DylanParreira/sibylla-assets/blob/main/SibyllaShop.png?raw=true"
+                 alt="Sibylla">
+            <div class="header-sep"></div>
+            <div class="header-title">Gestion Vendeur</div>
+        </div>
+        <div class="header-right">
+            <div class="vendor-name">Connecté : <span id="vendorName">—</span></div>
+            <a class="btn-logout" style="border-color:rgba(77,163,255,.35);color:#4da3ff" href="<?= appUrl ?>?page=market">🛒 Market</a>
+            <? if (userRole >= 1) { ?>
+            <a class="btn-logout" style="border-color:rgba(64,224,255,.35);color:#40e0ff" href="<?= appUrl ?>?page=stock-admin&token=<?= vendeurToken ?>">📦 Stock Admin</a>
+            <a class="btn-logout" style="border-color:rgba(64,224,255,.35);color:#40e0ff" href="<?= appUrl ?>?page=craft-admin&token=<?= vendeurToken ?>">⚗️ Craft Admin</a>
+            <? } ?>
+            <button class="btn-logout" onclick="logout()">Déconnexion</button>
+        </div>
+    </header>
+
+    <div class="page-wrapper">
+
+        <!-- STATS -->
+        <div class="stats-band">
+            <div class="stat-card c-total">
+                <div class="stat-label">Total annonces</div>
+                <div class="stat-value" id="statTotal">—</div>
+            </div>
+            <div class="stat-card c-dispo">
+                <div class="stat-label">Disponibles</div>
+                <div class="stat-value" id="statDispo">—</div>
+            </div>
+            <div class="stat-card c-reserve">
+                <div class="stat-label">Réservées</div>
+                <div class="stat-value" id="statReserve">—</div>
+            </div>
+            <div class="stat-card c-vendu">
+                <div class="stat-label">Vendues</div>
+                <div class="stat-value" id="statVendu">—</div>
+            </div>
+        </div>
+
+        <!-- MES ANNONCES -->
+        <div class="section-header">
+            <div class="section-title">Mes annonces</div>
+            <button class="btn-add" onclick="openModal()">+ Nouvelle annonce</button>
+        </div>
+
+        <div class="items-list" id="itemsList">
+            <div class="empty-state">
+                <div class="empty-icon">⏳</div>
+                <p>Chargement…</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL ANNONCE (ajout / édition) -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div class="modal-title" id="modalTitle">Nouvelle annonce</div>
+
+            <div class="modal-grid">
+
+                <!-- Item -->
+                <div class="form-group full">
+                    <label class="form-label">Nom de l'item *</label>
+                    <input class="form-input" type="text" id="fItem" placeholder="Ex : Laranite brute">
+                </div>
+
+                <!-- Description -->
+                <div class="form-group full">
+                    <label class="form-label">Description *</label>
+                    <textarea class="form-textarea" id="fDesc" placeholder="Décris l'article, son état, conditions…"></textarea>
+                </div>
+
+                <!-- Prix -->
+                <div class="form-group">
+                    <label class="form-label">Prix (aUEC) *</label>
+                    <input class="form-input" type="number" id="fPrix" min="0" placeholder="0">
+                </div>
+
+                <!-- Quantité -->
+                <div class="form-group">
+                    <label class="form-label">Quantité *</label>
+                    <input class="form-input" type="number" id="fQuantite" min="1" value="1" placeholder="1">
+                </div>
+
+                <!-- Qualité -->
+                <div class="form-group">
+                    <label class="form-label">Qualité (0–1000)</label>
+                    <input class="form-input" type="number" id="fQualite" min="0" max="1000" value="500" placeholder="500">
+                </div>
+
+                <!-- Catégorie -->
+                <div class="form-group">
+                    <label class="form-label">Catégorie *</label>
+                    <select class="form-select" id="fCategorie">
+                        <option value="">— Choisir —</option>
+                        <option value="⛏️ Minerais & Gemmes">⛏️ Minerais & Gemmes</option>
+                        <option value="📦 Marchandises">📦 Marchandises</option>
+                        <option value="⚙️ Composants">⚙️ Composants</option>
+                        <option value="🔫 Armes">🔫 Armes</option>
+                        <option value="🛡️ Armures & Équipement">🛡️ Armures & Équipement</option>
+                    </select>
+                </div>
+
+                <!-- Type d'annonce -->
+                <div class="form-group full">
+                    <label class="form-label">Type d'annonce *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="fType" id="fTypeVente" value="Vente" checked>
+                            📦 Vente
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="fType" id="fTypeRecherche" value="Recherche">
+                            🔍 Recherche
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Prix à l'unité -->
+                <div class="form-group full">
+                    <label class="check-label">
+                        <input type="checkbox" id="fPrixUnite">
+                        Prix à l'unité (affichera "X aUEC / unité")
+                    </label>
+                </div>
+
+                <!-- URL Image -->
+                <div class="form-group full">
+                    <label class="form-label">URL Image (optionnel)</label>
+                    <input class="form-input" type="url" id="fImageUrl"
+                           placeholder="https://i.imgur.com/…"
+                           oninput="previewImg(this.value)">
+                    <img class="img-preview" id="imgPreview" alt="Aperçu">
+                </div>
+
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+                <button class="btn-save" id="btnSave" onclick="submitListing()">Publier</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL RÈGLEMENT -->
+    <div class="modal-reglement" id="reglementModal">
+        <div class="reglement-box">
+            <div class="reglement-title">📜 Règlement du Marketplace Sibylla</div>
+
+            <div class="reglement-body">
+                <p><strong>Bienvenue sur le Marketplace Sibylla !</strong></p>
+                <p>En utilisant ce marketplace, vous acceptez de respecter les règles suivantes :</p>
+
+                <h3>🔹 Règles générales</h3>
+                <ul>
+                    <li>Seuls les membres de Sibylla peuvent utiliser ce marketplace</li>
+                    <li>Les transactions se font en aUEC (monnaie virtuelle in-game uniquement)</li>
+                    <li>Soyez honnête dans vos descriptions d'items</li>
+                    <li>Respectez les autres vendeurs et acheteurs</li>
+                </ul>
+
+                <h3>🔹 Transactions</h3>
+                <ul>
+                    <li>Les transactions se font de gré à gré entre joueurs</li>
+                    <li>Contactez le vendeur sur Discord pour finaliser la vente</li>
+                    <li>Mettez à jour le statut de vos annonces (Disponible / Réservé / Vendu)</li>
+                    <li>Supprimez vos annonces une fois l'item vendu</li>
+                </ul>
+
+                <h3>🔹 Interdictions</h3>
+                <ul>
+                    <li>❌ Pas de vraie monnaie (€, $, etc.) — Uniquement aUEC</li>
+                    <li>❌ Pas de spam ou d'annonces abusives</li>
+                    <li>❌ Pas d'arnaques ou de fausses annonces</li>
+                    <li>❌ Pas de vente de vaisseaux (trading in-game uniquement)</li>
+                    <li>❌ Pas de contenu à caractère sexuel</li>
+                </ul>
+
+                <h3>🔹 Sanctions</h3>
+                <ul>
+                    <li>En cas de non-respect, votre compte vendeur peut être suspendu</li>
+                    <li>Les règles appliquées sur le serveur Discord sont les mêmes pour le site</li>
+                    <li>Tout litige peut faire l'objet d'un ticket modérateur</li>
+                </ul>
+
+                <p class="reglement-warn">
+                    ⚠️ Ce marketplace est un service gratuit fourni par Sibylla.
+                    Utilisez-le de manière responsable !
+                </p>
+            </div>
+
+            <div class="reglement-footer" style="flex-direction:column; align-items:center; gap:1rem;">
+                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-size:0.88rem; color:var(--sib-muted);">
+                    <input type="checkbox" id="nePlusAfficher" style="accent-color:var(--sib-accent1); width:1rem; height:1rem;">
+                    Ne plus afficher ce message
+                </label>
+                <button class="btn-accept" id="btnAccept" onclick="accepterReglement()">
+                    ✅ J'accepte le règlement
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const TOKEN = '<?= vendeurToken ?>';
+
+        let listings     = [];
+        let editingId    = null;
+        let TOKEN_USERNAME = '';
+
+        // ===== INIT =====
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        function loadData() {
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    if (data.error) {
+                        showToast(data.error, 'error');
+                        setTimeout(function() {
+                            window.top.location.href = '<?= appUrl ?>?page=login';
+                        }, 2000);
+                        return;
+                    }
+                    document.getElementById('vendorName').textContent = data.vendorName || '—';
+                    TOKEN_USERNAME = data.username || '';
+                    listings = data.listings || [];
+                    updateStats(data.stats || {});
+                    renderListings();
+                    if (!data.reglementAccepte) {
+                        document.getElementById('reglementModal').classList.add('active');
+                    }
+                })
+                .withFailureHandler(function() {
+                    showToast('Erreur lors du chargement.', 'error');
+                })
+                .getVendeurData(TOKEN);
+        }
+
+        // ===== STATS =====
+        function updateStats(s) {
+            document.getElementById('statTotal').textContent   = s.total   ?? '0';
+            document.getElementById('statDispo').textContent   = s.dispo   ?? '0';
+            document.getElementById('statReserve').textContent = s.reserve ?? '0';
+            document.getElementById('statVendu').textContent   = s.vendu   ?? '0';
+        }
+
+        // ===== RENDU ANNONCES =====
+        function renderListings() {
+            const container = document.getElementById('itemsList');
+
+            if (listings.length === 0) {
+                container.innerHTML =
+                    '<div class="empty-state">' +
+                        '<div class="empty-icon">📦</div>' +
+                        '<p>Aucune annonce pour le moment.</p>' +
+                        '<p>Clique sur <strong>+ Nouvelle annonce</strong> pour commencer.</p>' +
+                    '</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            listings.forEach(function(l) {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+
+                // Image ou placeholder
+                var imgHtml = l.imageUrl
+                    ? '<img class="item-img" src="' + escHtml(l.imageUrl) + '" alt="" onerror="this.style.display=\'none\'">'
+                    : '<div class="item-img-placeholder">📦</div>';
+
+                // Badges statut + type
+                var statutClass = l.statut === 'Disponible' ? 'badge-dispo'
+                                : l.statut === 'Réservé'    ? 'badge-reserve'
+                                : 'badge-vendu';
+                var typeClass   = l.type === 'Recherche'    ? 'badge-recherche' : 'badge-vente';
+
+                // Prix formaté
+                var prixStr = parseInt(l.prix).toLocaleString('fr-FR') + ' aUEC';
+                if (l.prixUnite) prixStr += ' / unité';
+
+                // Qualité
+                var qualiteStr = l.qualite !== undefined ? 'Qualité : ' + l.qualite : '';
+
+                // Boutons contextuels
+                var actionsHtml = '';
+                actionsHtml += '<button class="btn-action btn-edit" onclick="openModal(\'' + l.id + '\')">✏️ Modifier</button>';
+
+                if (l.statut === 'Disponible') {
+                    actionsHtml += '<button class="btn-action btn-reserve" onclick="changeStatus(\'' + l.id + '\', \'Réservé\')">⏳ Réserver</button>';
+                }
+                if (l.statut === 'Réservé') {
+                    actionsHtml += '<button class="btn-action btn-vendu" onclick="changeStatus(\'' + l.id + '\', \'Vendu\')">✅ Vendu</button>';
+                    actionsHtml += '<button class="btn-action btn-annuler" onclick="changeStatus(\'' + l.id + '\', \'Disponible\')">↩️ Annuler</button>';
+                }
+                actionsHtml += '<button class="btn-action btn-delete" onclick="removeListing(\'' + l.id + '\', \'' + escHtml(l.item) + '\')">🗑️ Supprimer</button>';
+
+                row.innerHTML =
+                    imgHtml +
+                    '<div class="item-body">' +
+                        '<div class="item-top">' +
+                            '<span class="item-name">' + escHtml(l.item) + '</span>' +
+                            '<span class="badge ' + statutClass + '">' + l.statut + '</span>' +
+                            '<span class="badge ' + typeClass + '">' + l.type + '</span>' +
+                        '</div>' +
+                        '<div class="item-meta">' +
+                            '<span class="item-prix">' + prixStr + '</span>' +
+                            '<span>📦 Qté : ' + l.quantite + '</span>' +
+                            '<span>' + escHtml(l.categorie) + '</span>' +
+                            (qualiteStr ? '<span>' + qualiteStr + '</span>' : '') +
+                        '</div>' +
+                        (l.desc ? '<div class="item-desc">' + escHtml(l.desc) + '</div>' : '') +
+                    '</div>' +
+                    '<div class="item-actions">' + actionsHtml + '</div>';
+
+                container.appendChild(row);
+            });
+        }
+
+        // ===== MODAL =====
+        function openModal(id) {
+            editingId = id || null;
+            document.getElementById('modalTitle').textContent  = id ? 'Modifier l\'annonce' : 'Nouvelle annonce';
+            document.getElementById('btnSave').textContent     = id ? 'Enregistrer' : 'Publier';
+            document.getElementById('btnSave').disabled        = false;
+
+            if (id) {
+                var l = listings.find(function(x) { return x.id === id; });
+                if (!l) return;
+                document.getElementById('fItem').value     = l.item || '';
+                document.getElementById('fDesc').value     = l.desc || '';
+                document.getElementById('fPrix').value     = l.prix || '';
+                document.getElementById('fQuantite').value = l.quantite || 1;
+                document.getElementById('fQualite').value  = l.qualite !== undefined ? l.qualite : 500;
+                document.getElementById('fCategorie').value= l.categorie || '';
+                document.getElementById('fImageUrl').value = l.imageUrl || '';
+                document.getElementById('fPrixUnite').checked = !!l.prixUnite;
+                document.getElementById(l.type === 'Recherche' ? 'fTypeRecherche' : 'fTypeVente').checked = true;
+                previewImg(l.imageUrl || '');
+            } else {
+                clearForm();
+            }
+
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            editingId = null;
+        }
+
+        function clearForm() {
+            document.getElementById('fItem').value      = '';
+            document.getElementById('fDesc').value      = '';
+            document.getElementById('fPrix').value      = '';
+            document.getElementById('fQuantite').value  = '1';
+            document.getElementById('fQualite').value   = '500';
+            document.getElementById('fCategorie').value = '';
+            document.getElementById('fImageUrl').value  = '';
+            document.getElementById('fPrixUnite').checked = false;
+            document.getElementById('fTypeVente').checked = true;
+            previewImg('');
+        }
+
+        function previewImg(url) {
+            var img = document.getElementById('imgPreview');
+            if (url) {
+                img.src = url;
+                img.style.display = 'block';
+            } else {
+                img.style.display = 'none';
+                img.src = '';
+            }
+        }
+
+        // ===== SOUMETTRE =====
+        function submitListing() {
+            var item = document.getElementById('fItem').value.trim();
+            var desc = document.getElementById('fDesc').value.trim();
+
+            if (!item || !desc) {
+                showToast('Le nom et la description sont requis.', 'error');
+                return;
+            }
+
+            var payload = {
+                id:        editingId,
+                item:      item,
+                desc:      desc,
+                prix:      parseInt(document.getElementById('fPrix').value) || 0,
+                quantite:  parseInt(document.getElementById('fQuantite').value) || 1,
+                qualite:   parseInt(document.getElementById('fQualite').value),
+                categorie: document.getElementById('fCategorie').value,
+                imageUrl:  document.getElementById('fImageUrl').value.trim(),
+                prixUnite: document.getElementById('fPrixUnite').checked,
+                type:      document.querySelector('input[name="fType"]:checked').value
+            };
+
+            var btn = document.getElementById('btnSave');
+            btn.disabled = true;
+            btn.textContent = '⏳ Enregistrement…';
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showToast(editingId ? 'Annonce modifiée !' : 'Annonce publiée !', 'success');
+                        closeModal();
+                        loadData();
+                    } else {
+                        showToast(result.message || 'Erreur.', 'error');
+                        btn.disabled = false;
+                        btn.textContent = editingId ? 'Enregistrer' : 'Publier';
+                    }
+                })
+                .withFailureHandler(function() {
+                    showToast('Erreur serveur.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = editingId ? 'Enregistrer' : 'Publier';
+                })
+                .saveListing(payload, TOKEN);
+        }
+
+        // ===== CHANGER STATUT =====
+        function changeStatus(id, statut) {
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showToast('Statut mis à jour : ' + statut, 'success');
+                        loadData();
+                    } else {
+                        showToast(result.error || result.message || 'Erreur.', 'error');
+                    }
+                })
+                .withFailureHandler(function() {
+                    showToast('Erreur serveur.', 'error');
+                })
+                .updateListingStatus(id, statut, TOKEN);
+        }
+
+        // ===== SUPPRIMER =====
+        function removeListing(id, name) {
+            if (!confirm('Supprimer "' + name + '" ?\n\nCette action est irréversible.')) return;
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        showToast('Annonce supprimée.', 'success');
+                        loadData();
+                    } else {
+                        showToast(result.error || result.message || 'Erreur.', 'error');
+                    }
+                })
+                .withFailureHandler(function() {
+                    showToast('Erreur serveur.', 'error');
+                })
+                .deleteListing(id, TOKEN);
+        }
+
+        // ===== TOAST =====
+        function showToast(msg, type) {
+            var t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + (type || 'success');
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+        }
+
+        // ===== UTILITAIRE =====
+        function escHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // ===== LOGOUT =====
+        function logout() {
+            google.script.run
+                .withSuccessHandler(function() {
+                    window.top.location.href = '<?= appUrl ?>';
+                })
+                .withFailureHandler(function() {
+                    window.top.location.href = '<?= appUrl ?>';
+                })
+                .logoutVendeur(TOKEN);
+        }
+
+        // ===== RÈGLEMENT =====
+        function accepterReglement() {
+            var btn = document.getElementById('btnAccept');
+            btn.disabled = true;
+            btn.textContent = '⏳ Enregistrement…';
+
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        document.getElementById('reglementModal').classList.remove('active');
+                    } else {
+                        showToast(result.error || 'Erreur.', 'error');
+                        btn.disabled = false;
+                        btn.textContent = '✅ J\'accepte le règlement';
+                    }
+                })
+                .withFailureHandler(function() {
+                    showToast('Erreur serveur.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '✅ J\'accepte le règlement';
+                })
+                .accepterReglementUser(TOKEN_USERNAME);
+        }
+
+        // Fermer modal en cliquant dehors
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blueprint Admin - Sibylla</title>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;800&family=Electrolize:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root { --sib-text:#DBE8FF; --sib-muted:#9fb6d7; --sib-accent1:#40e0ff; --sib-gold:#fada7d; --sib-bg:#0a0e27; --sib-panel:#11162e; --sib-border:rgba(255,255,255,.08); --sib-red:#ff6b6b; --sib-green:#4fffb0; --sib-orange:#ffb347; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Electrolize','Rajdhani',sans-serif; background:var(--sib-bg); color:var(--sib-text); min-height:100vh; }
+
+        header { background:rgba(0,0,0,.7); backdrop-filter:blur(12px); border-bottom:1px solid rgba(64,224,255,.2); padding:0 2rem; height:64px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+        .header-left { display:flex; align-items:center; gap:1.2rem; }
+        .header-logo { height:36px; }
+        .header-sep { width:1px; height:28px; background:var(--sib-border); }
+        .header-title { font-family:'Rajdhani',sans-serif; font-size:1.1rem; font-weight:700; letter-spacing:.12em; color:var(--sib-gold); text-transform:uppercase; }
+        .header-right { display:flex; gap:.7rem; align-items:center; }
+        .btn-link { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.85rem; letter-spacing:.1em; padding:.45rem 1rem; background:transparent; border:1px solid var(--sib-border); border-radius:8px; color:var(--sib-muted); cursor:pointer; text-decoration:none; transition:all .3s; }
+        .btn-link:hover { color:var(--sib-text); }
+        .btn-logout { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.85rem; letter-spacing:.1em; padding:.45rem 1rem; background:transparent; border:1px solid rgba(255,107,107,.35); border-radius:8px; color:var(--sib-red); cursor:pointer; transition:all .3s; }
+        .btn-logout:hover { background:rgba(255,107,107,.1); }
+
+        .page-wrapper { max-width:1200px; margin:0 auto; padding:2rem; }
+
+        /* TABS */
+        .tabs { display:flex; gap:.5rem; margin-bottom:2rem; border-bottom:1px solid var(--sib-border); }
+        .tab { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.95rem; letter-spacing:.1em; text-transform:uppercase; padding:.7rem 1.4rem; cursor:pointer; border-bottom:2px solid transparent; color:var(--sib-muted); transition:all .25s; }
+        .tab.active { color:var(--sib-gold); border-bottom-color:var(--sib-gold); }
+        .tab-content { display:none; }
+        .tab-content.active { display:block; }
+
+        .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.2rem; flex-wrap:wrap; gap:.8rem; }
+        .section-title { font-family:'Rajdhani',sans-serif; font-size:1.1rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--sib-text); display:flex; align-items:center; gap:.6rem; }
+        .section-title::before { content:''; display:block; width:3px; height:1.1em; background:var(--sib-gold); border-radius:2px; }
+
+        /* FILTER BUTTONS */
+        .filter-btns { display:flex; gap:.5rem; flex-wrap:wrap; }
+        .filter-btn { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.78rem; letter-spacing:.1em; padding:.35rem .9rem; border-radius:20px; cursor:pointer; transition:all .25s; border:1px solid var(--sib-border); color:var(--sib-muted); background:none; }
+        .filter-btn.active, .filter-btn:hover { color:var(--sib-text); border-color:rgba(255,255,255,.25); background:rgba(255,255,255,.06); }
+
+        /* REQUEST CARD */
+        .request-card { background:var(--sib-panel); border:1px solid var(--sib-border); border-radius:14px; padding:1.2rem 1.4rem; margin-bottom:.8rem; transition:border-color .25s; }
+        .request-card:hover { border-color:rgba(255,255,255,.15); }
+        .request-card.status-discussion { border-color:rgba(64,224,255,.2); }
+        .request-card.status-accepte { border-color:rgba(79,255,176,.2); }
+        .rc-header { display:flex; align-items:flex-start; gap:1rem; margin-bottom:.8rem; flex-wrap:wrap; }
+        .rc-member { font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700; color:var(--sib-accent1); }
+        .rc-item   { font-size:1rem; color:var(--sib-text); font-weight:600; }
+        .rc-meta   { font-size:.8rem; color:var(--sib-muted); margin-top:.15rem; }
+        .rc-right  { margin-left:auto; display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+
+        /* Badges */
+        .badge { display:inline-block; font-family:'Rajdhani',sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:.22rem .65rem; border-radius:20px; }
+        .badge-attente    { color:var(--sib-gold);    background:rgba(250,218,125,.1);  border:1px solid rgba(250,218,125,.3); }
+        .badge-discussion { color:var(--sib-accent1); background:rgba(64,224,255,.1);  border:1px solid rgba(64,224,255,.3); }
+        .badge-accepte    { color:var(--sib-green);   background:rgba(79,255,176,.1);   border:1px solid rgba(79,255,176,.3); }
+        .badge-refuse     { color:var(--sib-red);     background:rgba(255,107,107,.1);  border:1px solid rgba(255,107,107,.3); }
+        .badge-crafte     { color:var(--sib-muted);   background:rgba(255,255,255,.05); border:1px solid var(--sib-border); }
+        .badge-annule     { color:rgba(159,182,215,.5); background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); }
+        .badge-custom     { color:var(--sib-gold); font-size:.65rem; background:rgba(250,218,125,.08); border:1px solid rgba(250,218,125,.2); }
+
+        /* Accept status indicators */
+        .accept-status { display:flex; gap:.5rem; font-size:.75rem; margin-bottom:.6rem; }
+        .accept-pill { padding:.2rem .6rem; border-radius:20px; font-family:'Rajdhani',sans-serif; font-weight:700; letter-spacing:.08em; }
+        .accept-pill.yes { color:var(--sib-green); background:rgba(79,255,176,.08); border:1px solid rgba(79,255,176,.25); }
+        .accept-pill.no  { color:var(--sib-muted); background:rgba(255,255,255,.03); border:1px solid var(--sib-border); }
+
+        /* Feasibility */
+        .feasibility { font-size:.78rem; padding:.4rem .8rem; border-radius:8px; margin-bottom:.6rem; display:inline-block; }
+        .feasibility.ok  { color:var(--sib-green); background:rgba(79,255,176,.07); border:1px solid rgba(79,255,176,.25); }
+        .feasibility.nok { color:var(--sib-red);   background:rgba(255,107,107,.07); border:1px solid rgba(255,107,107,.25); }
+        .feasibility.unk { color:var(--sib-muted); background:rgba(255,255,255,.03); border:1px solid var(--sib-border); }
+
+        /* Notes */
+        .rc-note { font-size:.83rem; color:var(--sib-muted); background:rgba(255,255,255,.03); border:1px solid var(--sib-border); border-radius:8px; padding:.6rem .9rem; margin-bottom:.7rem; }
+        .rc-note.user-note  { border-color:rgba(64,224,255,.2); }
+        .rc-note.admin-note { border-color:rgba(250,218,125,.15); }
+        .rc-note.detail-note { border-color:rgba(64,224,255,.15); font-size:.8rem; }
+
+        /* Custom recipe display */
+        .custom-recipe-list { display:flex; flex-wrap:wrap; gap:.3rem; margin-bottom:.6rem; }
+        .crecipe-tag { font-size:.75rem; padding:.2rem .55rem; border-radius:6px; background:rgba(255,255,255,.05); border:1px solid var(--sib-border); color:var(--sib-muted); }
+        .crecipe-tag.ok  { color:var(--sib-green); border-color:rgba(79,255,176,.25); background:rgba(79,255,176,.06); }
+        .crecipe-tag.nok { color:var(--sib-red);   border-color:rgba(255,107,107,.25); background:rgba(255,107,107,.06); }
+
+        /* Chat */
+        .chat-section { border-top:1px solid var(--sib-border); padding-top:.8rem; margin-top:.6rem; }
+        .chat-title { font-family:'Rajdhani',sans-serif; font-size:.75rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--sib-muted); margin-bottom:.5rem; }
+        .chat-messages { max-height:150px; overflow-y:auto; display:flex; flex-direction:column; gap:.35rem; margin-bottom:.6rem; }
+        .chat-msg { display:flex; flex-direction:column; }
+        .chat-msg.from-admin { align-items:flex-start; }
+        .chat-msg.from-user  { align-items:flex-end; }
+        .chat-bubble { max-width:80%; padding:.4rem .85rem; border-radius:10px; font-size:.83rem; line-height:1.5; }
+        .chat-msg.from-admin .chat-bubble { background:rgba(64,224,255,.07); border:1px solid rgba(64,224,255,.18); border-radius:3px 10px 10px 10px; }
+        .chat-msg.from-user  .chat-bubble { background:rgba(250,218,125,.07); border:1px solid rgba(250,218,125,.18); border-radius:10px 3px 10px 10px; }
+        .chat-meta { font-size:.69rem; color:var(--sib-muted); margin-top:.1rem; }
+
+        /* Actions row */
+        .rc-actions { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin-top:.6rem; }
+        .msg-input { font-family:'Electrolize',sans-serif; font-size:.83rem; color:var(--sib-text); background:rgba(255,255,255,.04); border:1px solid var(--sib-border); border-radius:8px; padding:.4rem .8rem; flex:1; min-width:180px; outline:none; }
+        .msg-input:focus { border-color:rgba(64,224,255,.35); }
+        .btn-action { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.78rem; letter-spacing:.08em; padding:.38rem .85rem; border-radius:8px; cursor:pointer; transition:all .2s; border:1px solid transparent; }
+        .btn-msg     { color:var(--sib-accent1); background:rgba(64,224,255,.07);  border-color:rgba(64,224,255,.25); }
+        .btn-msg:hover  { background:rgba(64,224,255,.15); }
+        .btn-accept  { color:var(--sib-green);  background:rgba(79,255,176,.1);  border-color:rgba(79,255,176,.3); }
+        .btn-accept:hover  { background:rgba(79,255,176,.2); }
+        .btn-craft   { color:var(--sib-gold);   background:rgba(250,218,125,.1); border-color:rgba(250,218,125,.3); }
+        .btn-craft:hover   { background:rgba(250,218,125,.2); }
+        .btn-refuse  { color:var(--sib-red);    background:rgba(255,107,107,.1); border-color:rgba(255,107,107,.3); }
+        .btn-refuse:hover  { background:rgba(255,107,107,.2); }
+
+        /* RAPPORT & HISTORIQUE */
+        .report-total { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:.8rem; margin-bottom:2rem; }
+        .res-card { background:var(--sib-panel); border:1px solid var(--sib-border); border-radius:12px; padding:1rem 1.2rem; }
+        .res-name { font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700; color:var(--sib-text); margin-bottom:.3rem; }
+        .res-qty  { font-family:'Rajdhani',sans-serif; font-size:1.6rem; font-weight:800; color:var(--sib-gold); }
+        .day-block { background:var(--sib-panel); border:1px solid var(--sib-border); border-radius:12px; padding:1rem 1.3rem; margin-bottom:.7rem; }
+        .day-title { font-family:'Rajdhani',sans-serif; font-size:.95rem; font-weight:700; color:var(--sib-accent1); margin-bottom:.6rem; }
+        .day-res   { font-size:.88rem; color:var(--sib-muted); margin-bottom:.25rem; }
+        .day-res span { color:var(--sib-text); font-weight:600; }
+        .hist-row { background:var(--sib-panel); border:1px solid var(--sib-border); border-radius:10px; padding:.9rem 1.2rem; margin-bottom:.5rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+        .hist-member { font-weight:600; color:var(--sib-accent1); flex-shrink:0; }
+        .hist-item   { flex:1; font-size:.92rem; }
+        .hist-meta   { font-size:.78rem; color:var(--sib-muted); }
+
+        /* Empty / Toast */
+        .empty { text-align:center; padding:3rem; color:var(--sib-muted); background:var(--sib-panel); border:1px solid var(--sib-border); border-radius:14px; }
+        .empty .ico { font-size:2.5rem; margin-bottom:.8rem; opacity:.4; }
+        .toast { position:fixed; bottom:2rem; right:2rem; z-index:1000; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.95rem; padding:.9rem 1.5rem; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.4); transform:translateY(20px); opacity:0; transition:all .35s; pointer-events:none; }
+        .toast.show { transform:translateY(0); opacity:1; }
+        .toast.success { background:rgba(79,255,176,.12); border:1px solid rgba(79,255,176,.4); color:var(--sib-green); }
+        .toast.error   { background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4); color:var(--sib-red); }
+
+        @media(max-width:700px){ .page-wrapper{padding:1rem;} header{padding:0 1rem;} }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-left">
+        <img class="header-logo" src="https://github.com/DylanParreira/sibylla-assets/blob/main/SibyllaShop.png?raw=true" alt="Sibylla">
+        <div class="header-sep"></div>
+        <div class="header-title">Blueprint Admin</div>
+    </div>
+    <div class="header-right">
+        <a class="btn-link" style="border-color:rgba(77,163,255,.35);color:#4da3ff" href="<?= appUrl ?>?page=vendeur&token=<?= vendeurToken ?>">◀ Mon panel</a>
+        <a class="btn-link" href="<?= appUrl ?>?page=stock-admin&token=<?= vendeurToken ?>">📦 Stock Admin</a>
+        <!-- Crafting toggle discret -->
+        <div style="display:flex;align-items:center;gap:.4rem;padding:.3rem .7rem;border-radius:8px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);">
+            <div id="craftStatusDot" style="width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .3s;"></div>
+            <button id="btnToggleCrafting" onclick="toggleCrafting()"
+                style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.08em;
+                       padding:0;background:none;border:none;cursor:pointer;color:var(--sib-muted);transition:color .25s;white-space:nowrap;">
+                …
+            </button>
+        </div>
+        <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    </div>
+</header>
+
+<div class="page-wrapper">
+
+    <!-- (craft toggle intégré dans le header) -->
+
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('demandes')">📋 Demandes</div>
+        <div class="tab" onclick="showTab('rapport')">📊 Rapport ressources</div>
+        <div class="tab" onclick="showTab('historique')">🏆 Historique</div>
+        <div class="tab" onclick="showTab('wiki')">🔄 Wiki Sync</div>
+    </div>
+
+    <!-- DEMANDES -->
+    <div id="tab-demandes" class="tab-content active">
+        <div class="section-header">
+            <div class="section-title">Demandes de Blueprint</div>
+            <div class="filter-btns">
+                <button class="filter-btn active" onclick="setFilter('tous',this)">Actives</button>
+                <button class="filter-btn" onclick="setFilter('En attente',this)">En attente</button>
+                <button class="filter-btn" onclick="setFilter('En discussion',this)">En discussion</button>
+                <button class="filter-btn" onclick="setFilter('Accepté',this)">Acceptées</button>
+                <button class="filter-btn" onclick="setFilter('Refusé',this)">Refusées</button>
+                <button class="filter-btn" onclick="setFilter('Annulé',this)">Annulées</button>
+            </div>
+        </div>
+        <div id="demandesList"></div>
+    </div>
+
+    <!-- RAPPORT -->
+    <div id="tab-rapport" class="tab-content">
+        <div class="section-header"><div class="section-title">Ressources à consommer (Blueprints acceptés)</div></div>
+        <div id="reportTotal" style="margin-bottom:2rem;"></div>
+        <div class="section-header" style="margin-top:1rem;"><div class="section-title">Détail par Blueprint</div></div>
+        <div id="reportByItem"></div>
+    </div>
+
+    <!-- HISTORIQUE -->
+    <div id="tab-historique" class="tab-content">
+        <div class="section-header"><div class="section-title">Historique des Blueprints terminés</div></div>
+        <div id="historiqueList"></div>
+    </div>
+
+    <!-- WIKI SYNC -->
+    <div id="tab-wiki" class="tab-content">
+        <div class="section-header">
+            <div class="section-title">Synchronisation Star Citizen Wiki</div>
+        </div>
+        <div style="background:var(--sib-panel);border:1px solid rgba(64,224,255,.15);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+            <div style="font-size:.85rem;color:var(--sib-muted);margin-bottom:1rem;">
+                Source : <span style="color:var(--sib-accent1);">api.star-citizen.wiki/api/blueprints</span>
+                &nbsp;·&nbsp; ~1 044 blueprints paginés (100/page)
+            </div>
+            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem;">
+                <div id="wikiLastSync" style="font-size:.82rem;color:rgba(159,182,215,.5);">Dernière sync : —</div>
+                <div id="wikiCooldownInfo" style="font-size:.82rem;color:rgba(255,179,71,.55);"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;">
+                <button id="btnWikiSync" class="btn-action btn-accept" onclick="doWikiSync()" style="min-width:160px;">🔄 Synchroniser maintenant</button>
+            </div>
+            <div style="margin-top:.8rem;font-size:.78rem;color:rgba(159,182,215,.35);">
+                La synchronisation automatique est désactivée. Un cooldown de 24h s'applique après chaque sync manuelle.
+            </div>
+        </div>
+        <div id="wikiSyncLog" style="font-size:.82rem;color:var(--sib-muted);margin-bottom:1.5rem;"></div>
+
+        <!-- ACTIVATION DES BLUEPRINTS -->
+        <div class="section-header" style="margin-top:1rem;">
+            <div class="section-title">Activer des blueprints</div>
+            <div style="font-size:.8rem;color:var(--sib-muted);">Seuls les blueprints activés sont visibles par les membres.</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;margin-bottom:1rem;">
+            <div style="position:relative;flex:1;min-width:200px;">
+                <span style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);opacity:.4;">🔍</span>
+                <input id="wikiAdminSearch" type="text" placeholder="Rechercher…"
+                    style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.55rem 1rem .55rem 2.3rem;font-family:'Electrolize',sans-serif;font-size:.88rem;color:var(--sib-text);outline:none;"
+                    oninput="filterAdminBlueprints()">
+            </div>
+            <div id="wikiAdminTypeFilter" style="display:flex;flex-wrap:wrap;gap:.35rem;">
+                <button class="filter-btn active" onclick="setAdminTypeFilter('',this)">Tous</button>
+            </div>
+        </div>
+        <div style="font-size:.8rem;color:var(--sib-muted);margin-bottom:.7rem;" id="wikiAdminCount"></div>
+        <div id="wikiAdminGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.7rem;">
+            <div style="color:var(--sib-muted);font-size:.88rem;padding:1rem;">Synchronisez d'abord pour afficher les blueprints.</div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const TOKEN = '<?= vendeurToken ?>';
+    let allRequests = [];
+    let currentFilter = 'tous';
+
+    window.onload = function() { loadRequests(); loadReport(); loadWikiConfig(); loadCraftingStatus(); };
+
+    // ===== CRAFTING TOGGLE =====
+    var craftingEnabled = true;
+
+    function loadCraftingStatus() {
+        google.script.run
+            .withSuccessHandler(function(r) { applyCraftingStatus(r.enabled); })
+            .withFailureHandler(function(){})
+            .getCraftingStatus();
+    }
+
+    function applyCraftingStatus(enabled) {
+        craftingEnabled = enabled;
+        var dot = document.getElementById('craftStatusDot');
+        var btn = document.getElementById('btnToggleCrafting');
+        if (enabled) {
+            dot.style.background = '#4fffb0';
+            dot.style.boxShadow  = '0 0 5px rgba(79,255,176,.7)';
+            btn.textContent      = 'Craft ON — désactiver';
+            btn.style.color      = 'rgba(159,182,215,.5)';
+        } else {
+            dot.style.background = '#ff6b6b';
+            dot.style.boxShadow  = '0 0 5px rgba(255,107,107,.7)';
+            btn.textContent      = 'Craft OFF — réactiver';
+            btn.style.color      = 'rgba(255,107,107,.6)';
+        }
+    }
+
+    function toggleCrafting() {
+        var btn = document.getElementById('btnToggleCrafting');
+        btn.disabled = true;
+        google.script.run
+            .withSuccessHandler(function(r) {
+                btn.disabled = false;
+                if (r.success) {
+                    applyCraftingStatus(r.enabled);
+                    showToast(r.enabled ? 'Crafting réactivé !' : 'Crafting désactivé.', r.enabled ? 'success' : 'error');
+                } else {
+                    showToast(r.message || 'Erreur.', 'error');
+                }
+            })
+            .withFailureHandler(function(){ btn.disabled = false; showToast('Erreur serveur.', 'error'); })
+            .setCraftingEnabled(!craftingEnabled, TOKEN);
+    }
+
+    function showTab(name) {
+        document.querySelectorAll('.tab').forEach(function(t,i){ t.classList.toggle('active',['demandes','rapport','historique','wiki'][i]===name); });
+        document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
+        document.getElementById('tab-'+name).classList.add('active');
+        if (name === 'historique') renderHistorique();
+    }
+
+    // ===== DEMANDES =====
+    function loadRequests() {
+        google.script.run
+            .withSuccessHandler(function(data) {
+                if (data.error) { showToast(data.error,'error'); return; }
+                allRequests = data.requests || [];
+                renderRequests();
+            })
+            .withFailureHandler(function(){ showToast('Erreur chargement.','error'); })
+            .getCraftRequests(TOKEN);
+    }
+
+    function setFilter(f, btn) {
+        currentFilter = f;
+        document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        renderRequests();
+    }
+
+    function renderRequests() {
+        var list = document.getElementById('demandesList');
+        var DONE = ['Crafté', 'Annulé'];
+        var filtered = currentFilter === 'tous'
+            ? allRequests.filter(function(r){ return DONE.indexOf(r.statut) === -1; })
+            : allRequests.filter(function(r){ return r.statut === currentFilter; });
+        if (filtered.length === 0) { list.innerHTML='<div class="empty"><div class="ico">📭</div><p>Aucune demande.</p></div>'; return; }
+
+        list.innerHTML = filtered.map(function(r) {
+            var bc = r.statut==='En attente'    ? 'badge-attente'
+                   : r.statut==='En discussion' ? 'badge-discussion'
+                   : r.statut==='Accepté'       ? 'badge-accepte'
+                   : r.statut==='Refusé'        ? 'badge-refuse'
+                   : r.statut==='Annulé'        ? 'badge-annule'
+                   : 'badge-crafte';
+
+            var statusCardClass = r.statut==='En discussion' ? ' status-discussion' : r.statut==='Accepté' ? ' status-accepte' : '';
+            var customBadge = r.customRecipe ? ' <span class="badge badge-custom">Perso</span>' : '';
+            var qLabel = r.prioriteQualite === 'ASC' ? '⬇ Moindres' : '⬆ Meilleures';
+
+            // Accept status indicators (seul le crafteur valide)
+            var acceptStatusHtml = '';
+
+            // Custom recipe feasibility
+            var feasHtml = '';
+            if (r.customRecipe && Array.isArray(r.customRecipe)) {
+                var feasLabel = r.feasible === true ? '✓ Réalisable avec le stock' : r.feasible === false ? '✗ Stock insuffisant' : '? À vérifier';
+                var feasCls   = r.feasible === true ? 'ok' : r.feasible === false ? 'nok' : 'unk';
+                feasHtml = '<div class="feasibility ' + feasCls + '">' + feasLabel + '</div>';
+                var tagsHtml = r.customRecipe.map(function(ing) {
+                    return '<span class="crecipe-tag">' + esc(ing.resource) + ' ×' + ing.qty + '</span>';
+                }).join('');
+                feasHtml += '<div class="custom-recipe-list">' + tagsHtml + '</div>';
+            }
+
+            // User note
+            var noteHtml = r.note ? '<div class="rc-note user-note">💬 ' + esc(r.note) + '</div>' : '';
+
+            // Reservation details
+            var detailHtml = '';
+            if (r.statut === 'Accepté' && r.reservationDetails && r.reservationDetails.length > 0) {
+                var lines = r.reservationDetails.map(function(d) {
+                    var qc = d.qualite >= 900 ? '#fada7d' : d.qualite >= 750 ? '#00ff88' : d.qualite >= 500 ? '#DBE8FF' : d.qualite >= 250 ? '#ffa500' : '#ff4444';
+                    return '<span style="color:' + qc + ';font-weight:700">Q' + d.qualite + '</span> ' + esc(d.resource) + ' ×' + d.qty;
+                }).join(' &nbsp;|&nbsp; ');
+                detailHtml = '<div class="rc-note detail-note">🔧 Prendre : ' + lines + '</div>';
+            }
+
+            // Admin note
+            var noteAdminHtml = r.noteAdmin ? '<div class="rc-note admin-note">📝 Note : ' + esc(r.noteAdmin) + '</div>' : '';
+
+            // Chat thread
+            var chatHtml = '<div class="chat-section">';
+            chatHtml += '<div class="chat-title">Messages</div>';
+            if (r.messages && r.messages.length > 0) {
+                chatHtml += '<div class="chat-messages">' + r.messages.map(function(m) {
+                    return '<div class="chat-msg from-' + m.from + '">' +
+                        '<div class="chat-bubble">' + esc(m.text) + '</div>' +
+                        '<div class="chat-meta">' + esc(m.displayName) + ' · ' + fmtDate(m.date) + '</div>' +
+                        '</div>';
+                }).join('') + '</div>';
+            }
+            chatHtml += '</div>';
+
+            // Actions
+            var actionsHtml = '<div class="rc-actions">';
+            actionsHtml += '<input class="msg-input" type="text" id="msg-' + esc(r.id) + '" placeholder="Message au membre (sans valider le Blueprint)…">';
+            actionsHtml += '<button class="btn-action btn-msg" onclick="sendMsg(\'' + esc(r.id) + '\')">📨 Envoyer</button>';
+            if (r.statut === 'En attente' || r.statut === 'En discussion') {
+                actionsHtml += '<button class="btn-action btn-accept" onclick="acceptReq(\'' + esc(r.id) + '\')">✓ Valider le Blueprint</button>';
+                actionsHtml += '<button class="btn-action btn-refuse" onclick="refuseReq(\'' + esc(r.id) + '\')">✗ Refuser</button>';
+            }
+            if (r.statut === 'Accepté') {
+                actionsHtml += '<button class="btn-action btn-craft" onclick="markCrafte(\'' + esc(r.id) + '\')">⚗️ Marquer Crafté</button>';
+                actionsHtml += '<button class="btn-action btn-refuse" onclick="refuseReq(\'' + esc(r.id) + '\')">✗ Annuler</button>';
+            }
+            actionsHtml += '</div>';
+
+            return '<div class="request-card' + statusCardClass + '">' +
+                '<div class="rc-header">' +
+                '<div><div class="rc-member">👤 ' + esc(r.displayName) + '</div>' +
+                '<div class="rc-meta">' + fmtDate(r.date) + ' — ' + qLabel + '</div></div>' +
+                '<div><div class="rc-item">📘 ' + esc(r.nomItem) + customBadge + ' <span style="color:var(--sib-muted)">×' + r.quantite + '</span></div></div>' +
+                '<div class="rc-right"><span class="badge ' + bc + '">' + esc(r.statut) + '</span></div>' +
+                '</div>' +
+                acceptStatusHtml + feasHtml + noteHtml + detailHtml + noteAdminHtml + chatHtml + actionsHtml +
+                '</div>';
+        }).join('');
+    }
+
+    function sendMsg(id) {
+        var input = document.getElementById('msg-' + id);
+        if (!input || !input.value.trim()) { showToast('Écrivez un message d\'abord.', 'error'); return; }
+        var text = input.value.trim();
+        input.disabled = true;
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) { showToast('Message envoyé.', 'success'); loadRequests(); }
+                else { showToast(r.message || 'Erreur.', 'error'); input.disabled = false; }
+            })
+            .withFailureHandler(function() { showToast('Erreur serveur.', 'error'); input.disabled = false; })
+            .sendCraftMessage(id, text, TOKEN);
+    }
+
+    function acceptReq(id) {
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) {
+                    showToast('🎉 Blueprint validé ! Ressources réservées.', 'success');
+                    loadRequests(); loadReport();
+                } else showToast(r.message || 'Erreur.', 'error');
+            })
+            .withFailureHandler(function(){ showToast('Erreur serveur.','error'); })
+            .acceptCraftRequest(id, TOKEN);
+    }
+
+    function refuseReq(id) {
+        var msgEl = document.getElementById('msg-' + id);
+        var note = msgEl ? msgEl.value.trim() : '';
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) { showToast('Demande refusée.', 'success'); loadRequests(); loadReport(); }
+                else showToast(r.message || 'Erreur.', 'error');
+            })
+            .withFailureHandler(function(){ showToast('Erreur serveur.','error'); })
+            .updateCraftRequest(id, 'Refusé', note, TOKEN);
+    }
+
+    function markCrafte(id) {
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) { showToast('Blueprint marqué comme réalisé !', 'success'); loadRequests(); loadReport(); }
+                else showToast(r.message || 'Erreur.', 'error');
+            })
+            .withFailureHandler(function(){ showToast('Erreur serveur.','error'); })
+            .updateCraftRequest(id, 'Crafté', '', TOKEN);
+    }
+
+    // ===== RAPPORT =====
+    function loadReport() {
+        google.script.run
+            .withSuccessHandler(function(data) { if (data.error) return; renderReport(data); })
+            .withFailureHandler(function(){})
+            .getResourceReport(TOKEN);
+    }
+
+    function renderReport(data) {
+        var totalEl = document.getElementById('reportTotal');
+        var itemEl  = document.getElementById('reportByItem');
+        if (!data.total || data.total.length === 0) {
+            totalEl.innerHTML = '<div class="empty"><div class="ico">📊</div><p>Aucun Blueprint accepté en cours.</p></div>';
+            itemEl.innerHTML = ''; return;
+        }
+        totalEl.innerHTML = '<div class="report-total">' +
+            data.total.map(function(r) {
+                return '<div class="res-card"><div class="res-name">' + esc(r.name) + '</div><div class="res-qty">' + r.qty + '</div></div>';
+            }).join('') + '</div>';
+        if (!data.byItem || data.byItem.length === 0) { itemEl.innerHTML = ''; return; }
+        itemEl.innerHTML = data.byItem.map(function(d) {
+            var customLabel = d.customRecipe ? ' <span style="font-size:.75rem;color:var(--sib-gold)">[Perso]</span>' : '';
+            var rows = d.resources.length > 0
+                ? d.resources.map(function(r) { return '<div class="day-res">' + esc(r.name) + ' : <span>' + r.qty + '</span></div>'; }).join('')
+                : '<div class="day-res" style="font-style:italic">Aucune recette</div>';
+            return '<div class="day-block">' +
+                '<div class="day-title">📘 ' + esc(d.nomItem) + customLabel + ' <span style="font-size:.8rem;color:var(--sib-muted)">×' + d.quantite + '</span>' +
+                ' <span style="font-size:.8rem;color:var(--sib-accent1)">— ' + esc(d.displayName) + '</span></div>' + rows + '</div>';
+        }).join('');
+    }
+
+    // ===== HISTORIQUE =====
+    function renderHistorique() {
+        var list = document.getElementById('historiqueList');
+        var done = allRequests.filter(function(r){ return r.statut === 'Crafté'; });
+        if (done.length === 0) { list.innerHTML='<div class="empty"><div class="ico">📘</div><p>Aucun Blueprint terminé.</p></div>'; return; }
+        list.innerHTML = done.map(function(r) {
+            var customLabel = r.customRecipe ? ' [Perso]' : '';
+            return '<div class="hist-row">' +
+                '<span class="hist-member">👤 ' + esc(r.displayName) + '</span>' +
+                '<span class="hist-item">📘 ' + esc(r.nomItem) + customLabel + ' ×' + r.quantite + '</span>' +
+                '<span class="hist-meta">Demande: ' + fmtDate(r.date) + (r.dateTraitement ? ' → Crafté: ' + fmtDate(r.dateTraitement) : '') + (r.traitePar ? ' par ' + esc(r.traitePar) : '') + '</span>' +
+                (r.noteAdmin ? '<span style="font-size:.78rem;color:var(--sib-muted);font-style:italic">' + esc(r.noteAdmin) + '</span>' : '') +
+                '</div>';
+        }).join('');
+    }
+
+    function logout() {
+        google.script.run.withSuccessHandler(function(){ window.top.location.href='<?= appUrl ?>'; }).withFailureHandler(function(){ window.top.location.href='<?= appUrl ?>'; }).logoutVendeur(TOKEN);
+    }
+
+    function showToast(msg,type){ var t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+(type||'success'); t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},3500); }
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function fmtQty(q){ var n=parseFloat(q); return isNaN(n)||n===0?'0':parseFloat(n.toFixed(2)).toString(); }
+    function fmtDate(d) {
+        if (!d) return '';
+        var s = String(d);
+        // Déjà au format DD/MM/YYYY — retourner tel quel
+        if (/^\d{2}\/\d{2}\/\d{4}/.test(s)) return s;
+        var dt = new Date(d);
+        if (isNaN(dt.getTime())) return s;
+        var day   = String(dt.getDate()).padStart(2,'0');
+        var month = String(dt.getMonth()+1).padStart(2,'0');
+        var year  = dt.getFullYear();
+        var h     = String(dt.getHours()).padStart(2,'0');
+        var m     = String(dt.getMinutes()).padStart(2,'0');
+        return day + '/' + month + '/' + year + ' ' + h + ':' + m;
+    }
+
+    // ===== WIKI SYNC & ACTIVATION =====
+    var allWikiAdmin = [];
+    var wikiAdminTypeFilter = '';
+    var ADMIN_TYPE_LABELS = {
+        'WeaponPersonal':'Armes','WeaponMelee':'Corps à corps',
+        'Char_Armor_Torso':'Torse','Char_Armor_Arms':'Bras',
+        'Char_Armor_Helmet':'Casque','Char_Armor_Backpack':'Dos',
+        'Char_Armor_Legs':'Jambes','Char_Armor_Undersuit':'Combinaison',
+        'Char_Armor_Gloves':'Gants'
+    };
+    function adminTypeLabel(t) {
+        if (!t) return '—';
+        return ADMIN_TYPE_LABELS[t] || t.replace(/^Char_Armor_/,'').replace(/_/g,' ');
+    }
+
+    var _cooldownTimer = null;
+
+    function loadWikiConfig() {
+        google.script.run
+            .withSuccessHandler(function(cfg) {
+                if (cfg.error) return;
+                document.getElementById('wikiLastSync').textContent = cfg.lastSync ? 'Dernière sync : ' + cfg.lastSync : 'Jamais synchronisé';
+            })
+            .withFailureHandler(function(){})
+            .getWikiApiConfig(TOKEN);
+        loadWikiAdminBlueprints();
+        applyWikiSyncCooldown();
+    }
+
+    function applyWikiSyncCooldown() {
+        var btn = document.getElementById('btnWikiSync');
+        var info = document.getElementById('wikiCooldownInfo');
+        if (_cooldownTimer) { clearInterval(_cooldownTimer); _cooldownTimer = null; }
+        var last = localStorage.getItem('sibylla_wiki_sync_last');
+        if (!last) { btn.disabled = false; btn.textContent = '🔄 Synchroniser maintenant'; if (info) info.textContent = ''; return; }
+        function tick() {
+            var remaining = 24 * 3600 * 1000 - (Date.now() - parseInt(last));
+            if (remaining <= 0) {
+                btn.disabled = false; btn.textContent = '🔄 Synchroniser maintenant';
+                if (info) info.textContent = '';
+                if (_cooldownTimer) { clearInterval(_cooldownTimer); _cooldownTimer = null; }
+                return;
+            }
+            btn.disabled = true;
+            var h = Math.floor(remaining / 3600000);
+            var m = Math.floor((remaining % 3600000) / 60000);
+            btn.textContent = '⏳ Cooldown ' + h + 'h ' + (m < 10 ? '0' : '') + m + 'm';
+            if (info) info.textContent = 'Prochain sync disponible dans ' + h + 'h ' + m + 'm';
+        }
+        tick();
+        _cooldownTimer = setInterval(tick, 60000);
+    }
+
+    function loadWikiAdminBlueprints() {
+        document.getElementById('wikiAdminGrid').innerHTML = '<div style="color:var(--sib-muted);font-size:.88rem;padding:1rem;">Chargement…</div>';
+        google.script.run
+            .withSuccessHandler(function(data) {
+                if (data.error) { document.getElementById('wikiAdminGrid').innerHTML = '<div style="color:var(--sib-muted);">'+esc(data.error)+'</div>'; return; }
+                allWikiAdmin = data.blueprints || [];
+                buildAdminTypeFilters();
+                renderAdminBlueprints();
+            })
+            .withFailureHandler(function() { document.getElementById('wikiAdminGrid').innerHTML = '<div style="color:var(--sib-red);">Erreur de chargement.</div>'; })
+            .getWikiBlueprintsAdmin(TOKEN);
+    }
+
+    function buildAdminTypeFilters() {
+        var types = {};
+        allWikiAdmin.forEach(function(bp) { if (bp.type) types[bp.type] = true; });
+        var btns = '<button class="filter-btn active" onclick="setAdminTypeFilter(\'\',this)">Tous</button>';
+        Object.keys(types).sort().forEach(function(t) {
+            btns += '<button class="filter-btn" onclick="setAdminTypeFilter(\'' + esc(t) + '\',this)">' + esc(adminTypeLabel(t)) + '</button>';
+        });
+        document.getElementById('wikiAdminTypeFilter').innerHTML = btns;
+    }
+
+    function setAdminTypeFilter(type, btn) {
+        wikiAdminTypeFilter = type;
+        document.querySelectorAll('#wikiAdminTypeFilter .filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        renderAdminBlueprints();
+    }
+
+    function filterAdminBlueprints() { renderAdminBlueprints(); }
+
+    function renderAdminBlueprints() {
+        var q = (document.getElementById('wikiAdminSearch').value || '').toLowerCase().trim();
+        var filtered = allWikiAdmin.filter(function(bp) {
+            var matchType = !wikiAdminTypeFilter || bp.type === wikiAdminTypeFilter;
+            var matchQ = !q || bp.name.toLowerCase().indexOf(q) !== -1;
+            return matchType && matchQ;
+        });
+        document.getElementById('wikiAdminCount').textContent = filtered.length + ' blueprint' + (filtered.length > 1 ? 's' : '') +
+            ' · ' + allWikiAdmin.filter(function(b){return b.active;}).length + ' activé(s)';
+        if (filtered.length === 0) {
+            document.getElementById('wikiAdminGrid').innerHTML = '<div style="color:var(--sib-muted);font-size:.88rem;padding:1rem;">Aucun résultat.</div>';
+            return;
+        }
+        var html = filtered.map(function(bp) {
+            var ings = (bp.ingredients || []).slice(0, 4).map(function(ing) {
+                return '<span style="font-size:.68rem;padding:.1rem .4rem;border-radius:4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--sib-muted);">'
+                    + esc(ing.name) + (ing.qty > 0 ? ' ×'+fmtQty(ing.qty) : '') + '</span>';
+            }).join('');
+            var moreLbl = bp.ingredients && bp.ingredients.length > 4 ? '<span style="font-size:.68rem;color:var(--sib-muted);opacity:.6">+' + (bp.ingredients.length-4) + '</span>' : '';
+            var mins = bp.craftTime > 0 ? Math.round(bp.craftTime/60) + ' min' : '';
+            var activeStyle = bp.active
+                ? 'border-color:rgba(79,255,176,.4);background:rgba(79,255,176,.04);'
+                : 'border-color:rgba(255,255,255,.07);';
+            var btnLabel = bp.active ? '✓ Activé' : '+ Activer';
+            var btnStyle = bp.active
+                ? 'background:rgba(79,255,176,.12);border:1px solid rgba(79,255,176,.4);color:var(--sib-green);'
+                : 'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--sib-muted);';
+            return '<div style="background:var(--sib-panel);border:1px solid;border-radius:12px;padding:.9rem 1rem;' + activeStyle + '">' +
+                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.4rem;">' +
+                '<div style="font-family:\'Rajdhani\',sans-serif;font-weight:700;font-size:.95rem;color:' + (bp.active ? 'var(--sib-green)' : 'var(--sib-text)') + ';">' + esc(bp.name) + '</div>' +
+                '<span style="font-size:.68rem;padding:.15rem .5rem;border-radius:10px;background:rgba(64,224,255,.08);border:1px solid rgba(64,224,255,.2);color:var(--sib-accent1);white-space:nowrap;">' + esc(adminTypeLabel(bp.type)) + '</span>' +
+                '</div>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:.5rem;">' + ings + moreLbl + '</div>' +
+                (mins ? '<div style="font-size:.7rem;color:rgba(159,182,215,.4);margin-bottom:.5rem;">⏱ '+mins+'</div>' : '') +
+                '<button onclick="toggleWikiActive(\'' + esc(bp.uuid) + '\',' + (!bp.active) + ',this)" ' +
+                'style="width:100%;padding:.35rem;border-radius:7px;cursor:pointer;font-family:\'Rajdhani\',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;transition:all .2s;' + btnStyle + '">' +
+                btnLabel + '</button>' +
+                '</div>';
+        }).join('');
+        document.getElementById('wikiAdminGrid').innerHTML = html;
+    }
+
+    function toggleWikiActive(uuid, active, btn) {
+        btn.disabled = true; btn.textContent = active ? '⏳ Fetch détail…' : '⏳';
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) {
+                    var bp = allWikiAdmin.find(function(b) { return b.uuid === uuid; });
+                    if (bp) bp.active = active;
+                    renderAdminBlueprints();
+                    showToast(active ? 'Blueprint activé !' : 'Blueprint désactivé.', active ? 'success' : 'success');
+                } else {
+                    showToast(r.message || 'Erreur.', 'error');
+                    btn.disabled = false;
+                }
+            })
+            .withFailureHandler(function() { showToast('Erreur serveur.', 'error'); btn.disabled = false; })
+            .setWikiBlueprintActive(uuid, active, TOKEN);
+    }
+
+    function doWikiSync() {
+        var btn = document.getElementById('btnWikiSync');
+        btn.disabled = true; btn.textContent = '⏳ Synchronisation…';
+        document.getElementById('wikiSyncLog').textContent = 'Récupération des blueprints en cours (~11 requêtes)…';
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) {
+                    localStorage.setItem('sibylla_wiki_sync_last', Date.now().toString());
+                    showToast('✅ ' + r.count + ' blueprints synchronisés !', 'success');
+                    document.getElementById('wikiLastSync').textContent = 'Dernière sync : ' + r.lastSync;
+                    document.getElementById('wikiSyncLog').textContent = '✅ ' + r.count + ' blueprints chargés — ' + r.lastSync;
+                } else {
+                    btn.disabled = false; btn.textContent = '🔄 Synchroniser maintenant';
+                    showToast('Erreur : ' + (r.message || 'Inconnue'), 'error');
+                    document.getElementById('wikiSyncLog').textContent = '❌ ' + (r.message || 'Erreur inconnue');
+                }
+                applyWikiSyncCooldown();
+            })
+            .withFailureHandler(function(e) {
+                btn.disabled = false; btn.textContent = '🔄 Synchroniser maintenant';
+                showToast('Erreur serveur.', 'error');
+                document.getElementById('wikiSyncLog').textContent = '❌ Erreur serveur : ' + (e.message || '');
+            })
+            .syncWikiBlueprintsAdmin(TOKEN);
+    }
+</script>
+</body>
+</html>

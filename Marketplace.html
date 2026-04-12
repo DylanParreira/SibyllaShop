@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace Sibylla</title>
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700;800&family=Electrolize:wght@400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sib-text: #DBE8FF;
+            --sib-muted: #9fb6d7;
+            --sib-bg: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            --sib-bg-solid: #04040b;
+            --sib-border: rgba(255,255,255,.12);
+            --sib-accent1: #40e0ff;
+            --sib-accent2: #4da3ff;
+            --sib-gold: #fada7d;
+            --sib-halo: rgba(64,224,255,.18);
+            --sib-ring: rgba(77,163,255,.65);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Electrolize', 'Rajdhani', sans-serif;
+            background: var(--sib-bg);
+            color: var(--sib-text);
+            min-height: 100vh;
+        }
+        
+        header {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid var(--sib-accent1);
+        }
+        
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--sib-accent1), var(--sib-accent2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .btn-primary {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(135deg, var(--sib-accent1), var(--sib-accent2));
+            color: #0a0e27;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 30px var(--sib-halo);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--sib-accent1);
+            color: var(--sib-accent1);
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+        
+        .controls {
+            max-width: 1400px;
+            margin: 0 auto 2rem;
+            padding: 0 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(64, 224, 255, 0.3);
+            border-radius: 25px;
+            color: var(--sib-text);
+            font-family: 'Electrolize', sans-serif;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            padding: 0.6rem 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(64, 224, 255, 0.3);
+            border-radius: 20px;
+            color: var(--sib-text);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn:hover, .filter-btn.active {
+            background: rgba(64, 224, 255, 0.2);
+            border-color: var(--sib-accent1);
+        }
+        
+        .items-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+        
+        .item-card {
+            background: rgba(4, 4, 11, 0.70);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid var(--sib-border);
+            transition: all 0.3s;
+        }
+        
+        .item-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--sib-ring);
+            box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 0 2px var(--sib-ring);
+        }
+        
+        .item-image-wrapper {
+            width: 100%;
+            height: 220px;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+        }
+        
+        .item-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .item-content {
+            padding: 1.5rem;
+        }
+        
+        .item-category {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(64, 224, 255, 0.1);
+            border-radius: 12px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .item-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--sib-accent1);
+            margin-bottom: 0.5rem;
+        }
+        
+        .item-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-disponible { background: rgba(0, 255, 0, 0.2); color: #00ff00; }
+        .status-réservé { background: rgba(255, 165, 0, 0.2); color: #ffa500; }
+        .status-vendu { background: rgba(255, 0, 0, 0.2); color: #ff0000; }
+        
+          .item-description {
+              color: var(--sib-muted);
+              margin: 0.5rem 0;
+              font-size: 0.95rem;
+              display: -webkit-box;
+              -webkit-line-clamp: 3;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-height: 4.5em;
+              line-height: 1.5em;
+          }
+        
+        .item-footer {
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid rgba(64, 224, 255, 0.2);
+        }
+        
+        .item-price {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--sib-accent1);
+        }
+        
+        .item-seller {
+            color: var(--sib-muted);
+            font-size: 0.9rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: var(--sib-accent1);
+        }
+        
+        @media (max-width: 768px) {
+            .items-grid { grid-template-columns: 1fr; padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+    <img src="https://github.com/DylanParreira/sibylla-assets/blob/main/SibyllaShop.png?raw=true" 
+         alt="Logo Sibylla" 
+         style="height: 45px; width: auto;">
+    <h1>SHOP SIBYLLA</h1>
+</div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+            <nav style="display: flex; gap: 0.5rem;">
+                <button class="btn-primary" style="cursor: default;" disabled>
+                    🛒 Market
+                </button>
+                <a href="<?= appUrl ?>?page=craft" class="btn-primary btn-secondary">
+                    ⚗️ Crafting
+                </a>
+            </nav>
+            <a href="<?= appUrl ?>?page=login" class="btn-primary btn-secondary">
+                Login
+            </a>
+        </div>
+        </div>
+    </header>
+          
+      <div class="hero">
+          <h2 style="font-family: Rajdhani; font-size: 1.8rem; color: var(--sib-text);">
+              🌌 Bienvenue au Shop de Sibylla !
+          </h2>
+          <p style="color: var(--sib-gold); font-weight: 700;">
+              💬 Privilégiez les MP Discord pour vos transactions
+          </p>
+          <p style="color: var(--sib-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+              Évitez de polluer les salons publics
+          </p>
+      </div>
+    
+    <div class="controls">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Rechercher..." onkeyup="filterItems()">
+        </div>
+          <div class="filter-buttons">
+            <button class="filter-btn active" onclick="setFilter(this, 'tous')">Tous</button>
+            <button class="filter-btn" onclick="setFilter(this, '⛏️ Minerais & Gemmes')">⛏️ Minerais</button>
+            <button class="filter-btn" onclick="setFilter(this, '📦 Marchandises')">📦 Marchandises</button>
+            <button class="filter-btn" onclick="setFilter(this, '⚙️ Composants')">⚙️ Composants</button>
+            <button class="filter-btn" onclick="setFilter(this, '🔫 Armes')">🔫 Armes</button>
+            <button class="filter-btn" onclick="setFilter(this, '🛡️ Armures & Équipement')">🛡️ Armures & Équipement</button>
+        </div>
+    </div>
+    
+    <div class="items-grid" id="itemsGrid">
+        <div class="loading">Chargement...</div>
+    </div>
+    
+    <script>
+        let allItems = [];
+        let currentFilter = 'tous';
+
+        function getQualiteLabel(q) {
+            var c = q>=900?'#fada7d':q>=750?'#00ff88':q>=500?'#DBE8FF':q>=250?'#ffa500':'#ff4444';
+            return { label: q + '+', color: c };
+        }
+
+        window.onload = loadItems;
+        
+        function loadItems() {
+            google.script.run
+                .withSuccessHandler(displayItems)
+                .withFailureHandler(() => {
+                    document.getElementById('itemsGrid').innerHTML = 
+                        '<div class="loading">❌ Erreur de chargement</div>';
+                })
+                .getAllItems();
+        }
+        
+        function displayItems(items) {
+            allItems = items || [];
+            filterItems(); // Applique le filtre actuel
+        }
+        
+        function setFilter(btn, filter) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = filter;
+            filterItems();
+        }
+        
+        function filterItems() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    let filtered = allItems;
+    
+    if (currentFilter !== 'tous') {
+        filtered = filtered.filter(item => item.Categorie === currentFilter);
+    }
+    
+    if (searchTerm) {
+        filtered = filtered.filter(item => 
+            (item.Item || '').toLowerCase().includes(searchTerm) ||
+            (item.Description || '').toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    const grid = document.getElementById('itemsGrid');
+    
+    if (filtered.length === 0) {
+        grid.innerHTML = '<div class="loading">Aucun item disponible</div>';
+        return;
+    }
+    
+    grid.innerHTML = filtered.map(item => {
+        const prix = parseInt(item.Prix);
+        const quantite = parseInt(item.Quantite);
+        const prixUnite = item.PrixUnite === true || item.PrixUnite === 'TRUE' || item.PrixUnite === 'true';
+        
+        return `
+            <div class="item-card">
+                <div class="item-image-wrapper">
+                    ${item.ImageURL ? 
+                        `<img src="${item.ImageURL}" alt="${item.Item}" onerror="this.parentElement.innerHTML='📦'">` : 
+                        '📦'
+                    }
+                </div>
+                <div class="item-content">
+                    <div class="item-category">${item.Categorie}</div>
+                    <div class="item-title">${item.Item}</div>
+                    ${item.Type === 'Recherche' ? 
+                        `<div class="item-status" style="background: rgba(64, 224, 255, 0.2); color: #40e0ff;">
+                            🔍 Recherche
+                        </div>` 
+                        : 
+                        `<div class="item-status status-${item.Statut.toLowerCase()}">
+                            ${item.Statut === 'Disponible' ? '✅' : item.Statut === 'Réservé' ? '⏳' : '❌'}
+                            ${item.Statut}
+                        </div>`
+                    }
+                    <div class="item-description">${item.Description}</div>
+                    <div class="item-footer">
+                    <div class="item-price">
+                        ${item.Type === 'Recherche' ? 'Budget max: ' : ''}
+                        ${prix.toLocaleString('fr-FR')} aUEC${prixUnite ? '/unité' : ''}
+                    </div>
+                        ${prixUnite && quantite > 1 ? 
+                            `<div class="item-seller" style="color: var(--sib-gold); font-weight: 700;">
+                                💰 Total: ${(prix * quantite).toLocaleString('fr-FR')} aUEC
+                            </div>` : ''
+                        }
+                        <div class="item-seller">📦 Quantité : ${quantite}</div>
+                        ${(() => { const q = getQualiteLabel(item.Qualite !== undefined ? item.Qualite : 500); return `<div class="item-seller">★ Qualité : <span style="color:${q.color}; font-weight:700;">${q.label}</span></div>`; })()}
+                        <div class="item-seller">Par ${item.Vendeur}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+    </script>
+    <footer style="background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); padding: 2rem; border-top: 2px solid var(--sib-accent1); margin-top: 4rem; text-align: center;">
+        <p style="color: var(--sib-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+            ⚠️ Sibylla décline toute responsabilité en cas de perte inattendue d'une quelconque propriété de l'utilisateur.
+        </p>
+        <p style="color: var(--sib-muted); font-size: 0.85rem;">
+            © Sibylla Corp. - Star Citizen Marketplace
+        </p>
+        <p style="color: var(--sib-muted); font-size: 0.8rem; margin-top: 0.5rem;">
+            🚫 Reproduction interdite sans autorisation - Tous droits réservés
+        </p>
+    </footer>
+</body>
+</html>
