@@ -385,6 +385,7 @@
 
 <script>
     const TOKEN = '<?= vendeurToken ?>';
+    const CSCU_PER_SCU = 100;  // Conversion: 1 SCU = 100 cSCU
     let allItems = [];
     let selectedItem = null;
     let globalQualityPref = 'DESC';
@@ -646,7 +647,7 @@
             var typeBadge = item.type ? '<span class="craft-type-badge">' + esc(typeLabel(item.type)) + '</span>' : '';
             var recipeTags = (item.recipe || []).map(function(r) {
                 var avail = stockSummary[r.resource.toLowerCase()] || 0;
-                var ok = r.qty > 0 && avail >= r.qty;
+                var ok = r.qty > 0 && avail >= r.qty * CSCU_PER_SCU;
                 var qtyStr = r.qty > 0 ? ' ×' + fmtQty(r.qty) + ' SCU' : '';
                 return '<span class="recipe-tag ' + (ok ? 'ok' : 'nok') + '">' + esc(r.resource) + qtyStr + '</span>';
             }).join('');
@@ -681,7 +682,7 @@
             var recipeHtml = '<div class="recipe-info-title">Ressources nécessaires (×1)</div>';
             selectedItem.recipe.forEach(function(r) {
                 var avail = stockSummary[r.resource.toLowerCase()] || 0;
-                var ok = avail >= r.qty;
+                var ok = avail >= r.qty * CSCU_PER_SCU;
                 recipeHtml += '<div style="font-size:.85rem;color:' + (ok ? 'var(--sib-green)' : 'var(--sib-red)') + ';margin-bottom:.15rem">' +
                     (ok ? '✓' : '✗') + ' ' + esc(r.resource) + ' — ' + fmtQty(r.qty) + ' SCU (dispo: ' + fmtQty(avail) + ')</div>';
             });
@@ -811,7 +812,7 @@
         var canCraft = true;
         if (selectedItem.recipe && selectedItem.recipe.length > 0) {
             canCraft = selectedItem.recipe.every(function(r) {
-                return (stockSummary[r.resource.toLowerCase()] || 0) >= r.qty * qty;
+                return (stockSummary[r.resource.toLowerCase()] || 0) >= r.qty * qty * CSCU_PER_SCU;
             });
         }
         var btn = document.getElementById('btnSubmit');
