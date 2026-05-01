@@ -81,24 +81,35 @@
         .section-title::before { content:''; display:block; width:3px; height:1.2em; background:var(--sib-accent1); border-radius:2px; }
         .result-count { font-size:.8rem; color:var(--sib-muted); }
 
-        /* ===== SECTION À MINER ===== */
+        /* ===== SECTION ALERTES PRIORITAIRES ===== */
         .miner-block {
             margin-bottom:2rem;
-            background:rgba(255,107,107,.04);
-            border:1px solid rgba(255,107,107,.3);
+            background:rgba(255,255,255,.02);
+            border:1px solid rgba(255,255,255,.1);
             border-radius:16px;
-            padding:1.2rem 1.2rem .4rem;
+            padding:1.2rem 1.2rem .6rem;
         }
         .miner-title {
             font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:800;
             letter-spacing:.15em; text-transform:uppercase;
-            color:#ff6b6b;
-            padding:.3rem 0; margin-bottom:.8rem;
+            color:var(--sib-text);
+            padding:.3rem 0;
             display:flex; align-items:center; gap:.6rem;
-            border-bottom:1px solid rgba(255,107,107,.2);
-            padding-bottom:.6rem;
+            border-bottom:1px solid rgba(255,255,255,.08);
+            padding-bottom:.6rem; margin-bottom:.9rem;
         }
-        .miner-title::before { content:'⛏'; font-size:1rem; }
+        .miner-title::before { content:'⚠'; font-size:1rem; }
+        .alert-group { margin-bottom:.9rem; }
+        .alert-group-label {
+            font-family:'Rajdhani',sans-serif; font-size:.72rem; font-weight:700;
+            letter-spacing:.12em; text-transform:uppercase;
+            display:inline-flex; align-items:center; gap:.3rem;
+            padding:.2rem .65rem; border-radius:20px; margin-bottom:.55rem;
+        }
+        .alert-group-label.lbl-empty { color:#ff6b6b; background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.35); }
+        .alert-group-label.lbl-3     { color:#ff8c42; background:rgba(255,140,66,.1);   border:1px solid rgba(255,140,66,.3); }
+        .alert-group-label.lbl-2     { color:var(--sib-orange); background:rgba(255,179,71,.1); border:1px solid rgba(255,179,71,.3); }
+        .alert-group-label.lbl-1     { color:var(--sib-gold);   background:rgba(250,218,125,.08); border:1px solid rgba(250,218,125,.25); }
 
         /* ===== CATÉGORIE ===== */
         .category-block { margin-bottom:2rem; }
@@ -302,22 +313,46 @@
         var totalVisible = 0;
         var html = '';
 
-        // Collect all empty items across all categories (no cat filter, but respect search)
-        var minerItems = [];
+        // Collect all alerted items (alertLevel > 0) across all categories
+        var alertItems = [];
         if (activeCat === 'all') {
             stockData.categories.forEach(function(cat) {
                 cat.items.forEach(function(item) {
-                    if (!item.isEmpty) return;
+                    if (item.alertLevel <= 0) return;
                     if (search && item.name.toLowerCase().indexOf(search) === -1) return;
-                    minerItems.push(item);
+                    alertItems.push(item);
                 });
+            });
+            // Sort: isEmpty first, then alertLevel desc, then totalAvail asc (lowest qty first = most urgent)
+            alertItems.sort(function(a, b) {
+                if (a.isEmpty && !b.isEmpty) return -1;
+                if (!a.isEmpty && b.isEmpty) return 1;
+                if (b.alertLevel !== a.alertLevel) return b.alertLevel - a.alertLevel;
+                return (a.totalAvail || 0) - (b.totalAvail || 0);
             });
         }
 
-        // "À Miner" aggregate section (top, all categories, only when not filtered by cat)
-        if (minerItems.length > 0) {
-            var minerHtml = minerItems.map(function(item) { return renderItem(item); }).join('');
-            html += '<div class="miner-block"><div class="miner-title">À Miner en priorité <span style="font-size:.75rem;font-weight:400;color:rgba(255,107,107,.7);letter-spacing:.05em;">' + minerItems.length + ' ressource' + (minerItems.length > 1 ? 's' : '') + '</span></div><div class="stock-grid">' + minerHtml + '</div></div>';
+        // Alertes prioritaires block (top, all categories, only when no cat filter)
+        if (alertItems.length > 0) {
+            var alertGroups = [
+                { items: alertItems.filter(function(i) { return i.isEmpty; }),                        label: '⛏ À Miner',   cls: 'lbl-empty' },
+                { items: alertItems.filter(function(i) { return !i.isEmpty && i.alertLevel === 3; }), label: '▲ Critique',  cls: 'lbl-3' },
+                { items: alertItems.filter(function(i) { return i.alertLevel === 2; }),               label: '▲ Stock bas', cls: 'lbl-2' },
+                { items: alertItems.filter(function(i) { return i.alertLevel === 1; }),               label: '▲ Attention', cls: 'lbl-1' }
+            ];
+            var groupsHtml = '';
+            alertGroups.forEach(function(g) {
+                if (g.items.length === 0) return;
+                var n = g.items.length;
+                groupsHtml += '<div class="alert-group">' +
+                    '<span class="alert-group-label ' + g.cls + '">' + g.label +
+                    ' <span style="font-weight:400;opacity:.7;">' + n + ' ressource' + (n > 1 ? 's' : '') + '</span></span>' +
+                    '<div class="stock-grid">' + g.items.map(function(item) { return renderItem(item); }).join('') + '</div>' +
+                    '</div>';
+            });
+            html += '<div class="miner-block"><div class="miner-title">Alertes stock <span style="font-size:.75rem;font-weight:400;color:rgba(219,232,255,.5);letter-spacing:.05em;">' +
+                alertItems.length + ' ressource' + (alertItems.length > 1 ? 's' : '') + '</span></div>' +
+                groupsHtml + '</div>';
         }
 
         // Regular category sections (includes empty items in their own category)
