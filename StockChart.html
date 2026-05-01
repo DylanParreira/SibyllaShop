@@ -136,6 +136,13 @@
                 📸 Snapshot maintenant
             </button>
         </div>
+
+        <div class="ctrl-group">
+            <div class="ctrl-label">Historique</div>
+            <button class="btn-snapshot" id="btnBackfill" onclick="backfillHistory()" title="Reconstruit l'historique complet à partir du log des modifications" style="border-color:rgba(250,218,125,.35);color:var(--sib-gold);background:rgba(250,218,125,.07)">
+                📜 Reconstruire depuis le log
+            </button>
+        </div>
     </div>
 
     <div class="chart-panel" id="chartPanel">
@@ -391,6 +398,29 @@
                 btn.disabled = false; btn.textContent = '📸 Snapshot maintenant';
             })
             .snapshotStockHistory();
+    }
+
+    // ===== BACKFILL FROM LOG =====
+    function backfillHistory() {
+        if (!confirm('Reconstruire l\'historique complet depuis le log ?\nCela effacera les données existantes dans STOCK_HISTORY et les remplacera par une reconstitution jour-par-jour basée sur le log.')) return;
+        var btn = document.getElementById('btnBackfill');
+        btn.disabled = true; btn.textContent = '⏳ Reconstruction…';
+        google.script.run
+            .withSuccessHandler(function(r) {
+                btn.disabled = false; btn.textContent = '📜 Reconstruire depuis le log';
+                if (r.success) {
+                    showToast('Historique reconstruit — ' + r.count + ' entrées pour ' + r.items + ' ressource(s).', 'success');
+                    historyCache = {};
+                    if (selectedResources.length > 0) loadAndRender();
+                } else {
+                    showToast(r.message || 'Erreur.', 'error');
+                }
+            })
+            .withFailureHandler(function() {
+                btn.disabled = false; btn.textContent = '📜 Reconstruire depuis le log';
+                showToast('Erreur serveur.', 'error');
+            })
+            .backfillStockHistory(TOKEN);
     }
 
     // ===== SETUP TRIGGER =====

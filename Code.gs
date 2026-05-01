@@ -2243,3 +2243,118 @@ function getStockHistory(itemNames, days, token) {
     return { history: result };
   } catch(e) { Logger.log('Erreur getStockHistory: ' + e); return { history: {} }; }
 }
+
+function backfillStockHistory(token) {
+  try {
+    const session = validateToken(token);
+    if (!session || (session.role || 0) < 1) return { success: false, message: 'Accès refusé.' };
+
+    const logSheet = _getSheet('STOCK_LOG');
+    if (!logSheet || logSheet.getLastRow() <= 1) return { success: false, message: 'Aucune entrée dans STOCK_LOG.' };
+
+    const logData = logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 4).getValues();
+
+    function parseRawDate(raw) {
+      if (raw instanceof Date) return raw;
+      const s = String(raw);
+      const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      if (m) return new Date(m[3] + '-' + m[2] + '-' + m[1] + 'T12:00:00');
+      return new Date(s);
+    }
+    function toDayStr(d) {
+      return ('0'+d.getDate()).slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + d.getFullYear();
+    }
+
+    // Parse log into structured entries
+    const entries = [];
+    logData.forEach(function(r) {
+      if (!r[0]) return;
+      const d = parseRawDate(r[1]);
+      if (isNaN(d.getTime())) return;
+      const details = String(r[3]);
+      let action, item, qty, quality;
+      let m;
+
+      m = details.match(/^Ajout\s*:\s*(.+?)\s+x(\d+)\s+\(Q:(\d+)\)/);
+      if (m) { action = 'add'; item = m[1].trim(); qty = parseInt(m[2]); quality = m[3]; }
+
+      if (!action) {
+        m = details.match(/^Modif\s*:\s*(.+?)\s*(?:→|->)\s*x(\d+)\s+\(Q:(\d+)\)/);
+        if (m) { action = 'set'; item = m[1].trim(); qty = parseInt(m[2]); quality = m[3]; }
+      }
+      if (!action) {
+        m = details.match(/^Suppression\s*:\s*(.+?)\s+x(\d+)\s+\(Q:(\d+)\)/);
+        if (m) { action = 'del'; item = m[1].trim(); qty = parseInt(m[2]); quality = m[3]; }
+      }
+      if (!action) return;
+
+      entries.push({ dayStr: toDayStr(d), ts: d.getTime(), action: action, item: item, qty: qty, key: item + '|' + quality });
+    });
+
+    if (entries.length === 0) return { success: false, message: 'Aucune entrée parseable dans le log.' };
+
+    entries.sort(function(a, b) { return a.ts - b.ts; });
+
+    // Group by day
+    const dayMap = {};
+    entries.forEach(function(e) {
+      if (!dayMap[e.dayStr]) dayMap[e.dayStr] = [];
+      dayMap[e.dayStr].push(e);
+    });
+
+    // Iterate day by day from first to today, carry forward state
+    function strToDate(s) {
+      const p = s.split('/');
+      return new Date(p[2] + '-' + p[1] + '-' + p[0] + 'T12:00:00');
+    }
+
+    const state = {}; // "Item|Quality" → qty
+    const today = new Date(); today.setHours(23, 59, 59, 0);
+    const cursor = strToDate(entries[0].dayStr);
+    const allRows = [];
+
+    while (cursor <= today) {
+      const ds = toDayStr(cursor);
+
+      if (dayMap[ds]) {
+        dayMap[ds].forEach(function(e) {
+          if (e.action === 'add') {
+            state[e.key] = (state[e.key] || 0) + e.qty;
+          } else if (e.action === 'set') {
+            state[e.key] = e.qty;
+          } else if (e.action === 'del') {
+            const remaining = Math.max(0, (state[e.key] || 0) - e.qty);
+            if (remaining === 0) delete state[e.key];
+            else state[e.key] = remaining;
+          }
+        });
+      }
+
+      // Compute per-item totals and write one row per item
+      const totals = {};
+      Object.keys(state).forEach(function(k) {
+        const itemName = k.split('|')[0];
+        totals[itemName] = (totals[itemName] || 0) + (state[k] || 0);
+      });
+      Object.keys(totals).forEach(function(itemName) {
+        allRows.push([ds, itemName, totals[itemName]]);
+      });
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    if (allRows.length === 0) return { success: false, message: 'Aucune donnée calculée.' };
+
+    // Write to STOCK_HISTORY (clear existing, rewrite all)
+    let histSheet = _getSheet('STOCK_HISTORY');
+    if (!histSheet) {
+      histSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('STOCK_HISTORY');
+      histSheet.appendRow(['Date', 'ItemName', 'TotalAvail']);
+    } else {
+      if (histSheet.getLastRow() > 1) histSheet.deleteRows(2, histSheet.getLastRow() - 1);
+    }
+    histSheet.getRange(2, 1, allRows.length, 3).setValues(allRows);
+
+    return { success: true, count: allRows.length, items: Object.keys(allRows.reduce(function(acc, r){ acc[r[1]]=1; return acc; }, {})).length };
+  } catch(e) { Logger.log('Erreur backfillStockHistory: ' + e); return { success: false, message: String(e) }; }
+}
