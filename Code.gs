@@ -1,4 +1,10 @@
 // ============================================
+// CONSTANTES
+// ============================================
+// Conversion SCU ↔ cSCU : 1 SCU = 100 cSCU
+const CSCU_PER_SCU = 100;
+
+// ============================================
 // GESTION DES UTILISATEURS
 // ============================================
 
@@ -638,7 +644,7 @@ function getCraftItemsWithStatus() {
       });
       let craftable = recipe.length > 0;
       recipe.forEach(function(ing) {
-        if (ing.qty > 0 && (stockMap[ing.resource.toLowerCase()] || 0) < ing.qty) craftable = false;
+        if (ing.qty > 0 && (stockMap[ing.resource.toLowerCase()] || 0) < ing.qty * CSCU_PER_SCU) craftable = false;
       });
       items.push({
         id: uuid,
@@ -954,7 +960,7 @@ function getCraftRequests(token) {
       let feasible = null;
       if (customRecipe && Array.isArray(customRecipe)) {
         feasible = customRecipe.every(function(ing) {
-          return (stockMap[String(ing.resource).toLowerCase()] || 0) >= (Number(ing.qty) || 0) * quantite;
+          return (stockMap[String(ing.resource).toLowerCase()] || 0) >= (Number(ing.qty) || 0) * quantite * CSCU_PER_SCU;
         });
       }
       return {
@@ -1064,7 +1070,7 @@ function _updateStockReservation(craftItemId, quantite, direction, prioriteQuali
 
     recipes.forEach(function(recipe) {
       const resName = String(recipe.resource);
-      let remaining = Math.round((Number(recipe.qty) || 0) * quantite * 10000) / 10000;
+      let remaining = Math.round((Number(recipe.qty) || 0) * quantite * CSCU_PER_SCU * 10000) / 10000;
 
       // Determine sort priority and optional minimum quality for this resource
       let localPriority = prioriteQualite || 'DESC';
