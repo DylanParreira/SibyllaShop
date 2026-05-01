@@ -499,7 +499,11 @@
             var seuil3Html = r.seuil3 > 0 ? '<span class="seuil-badge s3">≤' + r.seuil3 + '</span>' : '<span class="seuil-none">–</span>';
             var actifHtml  = r.actif ? '<span class="actif-on">✓ Actif</span>' : '<span class="actif-off">✗ Désactivé</span>';
             var toggleCls  = r.actif ? 'btn-toggle-off' : 'btn-toggle-on';
-            var deleteTitle = isEmpty ? 'Réinitialiser (conserver vide)' : 'Supprimer';
+            // qty > 0 → Reset (sets to 0/500 and keeps row visible)
+            // qty = 0 → Supprimer (actually removes the row)
+            var actionBtn = isEmpty
+                ? '<button class="btn-action btn-delete" onclick="deleteStock(\'' + esc(r.id) + '\')" title="Supprimer définitivement">Supprimer</button>'
+                : '<button class="btn-action btn-toggle-off" onclick="deleteStock(\'' + esc(r.id) + '\')" title="Remettre à zéro (conserve la ligne visible)">↺ Reset</button>';
             return '<tr' + (rowCls ? ' class="'+rowCls+'"' : '') + '>' +
                 '<td>' + esc(r.categorie) + '</td>' +
                 '<td><strong>' + itemLabel + '</strong></td>' +
@@ -513,7 +517,7 @@
                 '<td><div class="td-actions">' +
                 '<button class="btn-action btn-edit" onclick="openStockModal(\'' + esc(r.id) + '\')">Modifier</button>' +
                 '<button class="btn-action ' + toggleCls + '" onclick="toggleActif(\'' + esc(r.id) + '\',' + !r.actif + ')">' + (r.actif?'Désactiver':'Activer') + '</button>' +
-                '<button class="btn-action btn-delete" onclick="deleteStock(\'' + esc(r.id) + '\')" title="' + deleteTitle + '">' + (isEmpty ? '↺ Reset' : 'Supprimer') + '</button>' +
+                actionBtn +
                 '</div></td></tr>';
         }).join('');
     }
@@ -587,13 +591,13 @@
         var r = stockData.find(function(x){ return x.id === id; });
         var isEmpty = r && (r.quantite || 0) <= 0;
         var msg = isEmpty
-            ? 'Ce stock est vide — il sera conservé visible (qualité 500, qté 0) pour rappeler qu\'il faut miner.\nContinuer ?'
-            : 'Supprimer cette entrée de stock ?';
+            ? 'Supprimer définitivement "' + (r ? r.item : '') + '" ?\n(Stock déjà à zéro — suppression permanente)'
+            : 'Remettre "' + (r ? r.item : '') + '" à zéro ?\n(La ligne reste visible avec ⛏ À MINER pour rappeler de miner)';
         if (!confirm(msg)) return;
         google.script.run
             .withSuccessHandler(function(res) {
                 if (res.success) {
-                    showToast(res.reset ? (res.message || 'Conservé vide (à miner).') : 'Supprimé.', 'success');
+                    showToast(res.reset ? (res.message || 'Remis à zéro — conservé visible.') : 'Supprimé.', 'success');
                     loadStock();
                 } else showToast(res.message || 'Erreur.', 'error');
             })

@@ -552,17 +552,18 @@ function deleteStockItem(id, token) {
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
         const qty = Number(data[i][3]) || 0;
-        if (qty <= 0) {
-          // Don't delete empty stock — reset to qty=0 quality=500 so it stays visible as "to mine"
+        if (qty > 0) {
+          // Qty still positive → reset to 0/500 so it stays visible as "to mine"
           sheet.getRange(i + 1, 4).setValue(0);
           sheet.getRange(i + 1, 5).setValue(500);
           sheet.getRange(i + 1, 8).setValue(0); // clear reservation
           _logStock(session.displayName || session.username,
-            'Réinitialisation (vide conservé) : ' + data[i][2]);
-          return { success: true, reset: true, message: 'Stock vide conservé et réinitialisé (à miner).' };
+            'Réinitialisation (à miner) : ' + data[i][2] + ' x' + data[i][3]);
+          return { success: true, reset: true, message: 'Stock remis à zéro — conservé visible (à miner).' };
         }
+        // Already at 0 → actually delete
         _logStock(session.displayName || session.username,
-          'Suppression : ' + data[i][2] + ' x' + data[i][3] + ' (Q:' + data[i][4] + ')');
+          'Suppression : ' + data[i][2]);
         sheet.deleteRow(i + 1);
         return { success: true };
       }
