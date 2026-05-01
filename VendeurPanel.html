@@ -79,6 +79,16 @@
         }
         .btn-logout:hover { background: rgba(255,107,107,0.1); border-color: var(--sib-red); }
 
+        /* View switcher */
+        .view-switcher { position:relative; }
+        .btn-view { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.85rem; letter-spacing:.1em; padding:.45rem 1rem; background:rgba(79,255,176,.07); border:1px solid rgba(79,255,176,.3); border-radius:8px; color:var(--sib-green); cursor:pointer; transition:all .3s; display:flex; align-items:center; gap:.3rem; white-space:nowrap; }
+        .btn-view:hover { background:rgba(79,255,176,.14); }
+        .view-dropdown { display:none; position:absolute; top:calc(100% + .4rem); right:0; background:#0d1226; border:1px solid rgba(79,255,176,.25); border-radius:10px; min-width:190px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,.5); overflow:hidden; }
+        .view-dropdown.open { display:block; }
+        .view-dropdown a { display:block; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.82rem; letter-spacing:.08em; padding:.6rem 1rem; color:var(--sib-muted); text-decoration:none; transition:background .2s; white-space:nowrap; }
+        .view-dropdown a:hover { background:rgba(255,255,255,.06); color:var(--sib-text); }
+        .view-dropdown .dd-sep { height:1px; background:rgba(255,255,255,.08); margin:.2rem 0; }
+
         /* ========== LAYOUT ========== */
         .page-wrapper { max-width: 1100px; margin: 0 auto; padding: 2rem; }
 
@@ -624,10 +634,18 @@
         </div>
         <div class="header-right">
             <div class="vendor-name">Connecté : <span id="vendorName">—</span></div>
-            <a class="btn-logout" style="border-color:rgba(77,163,255,.35);color:#4da3ff" href="<?= appUrl ?>?page=market">🛒 Market</a>
             <? if (userRole >= 1) { ?>
             <a class="btn-logout" style="border-color:rgba(64,224,255,.35);color:#40e0ff" href="<?= appUrl ?>?page=stock-admin&token=<?= vendeurToken ?>">📦 Stock Admin</a>
             <a class="btn-logout" style="border-color:rgba(64,224,255,.35);color:#40e0ff" href="<?= appUrl ?>?page=craft-admin&token=<?= vendeurToken ?>">⚗️ Craft Admin</a>
+            <div class="view-switcher">
+                <button class="btn-view" onclick="toggleViewDropdown()">👁 Vue membre ▾</button>
+                <div class="view-dropdown" id="viewDropdown">
+                    <a href="<?= appUrl ?>?page=stock&token=<?= vendeurToken ?>">📦 Stock (vue membres)</a>
+                    <a href="<?= appUrl ?>?page=craft&token=<?= vendeurToken ?>">⚙️ Crafting (vue membres)</a>
+                    <div class="dd-sep"></div>
+                    <a href="<?= appUrl ?>?page=market">🛒 Marketplace</a>
+                </div>
+            </div>
             <? } ?>
             <button class="btn-logout" onclick="logout()">Déconnexion</button>
         </div>
@@ -1110,6 +1128,16 @@
                 })
                 .logoutVendeur(TOKEN);
         }
+
+        function toggleViewDropdown() {
+            var dd = document.getElementById('viewDropdown');
+            if (dd) dd.classList.toggle('open');
+        }
+        document.addEventListener('click', function(e) {
+            var sw = document.querySelector('.view-switcher');
+            var dd = document.getElementById('viewDropdown');
+            if (sw && dd && !sw.contains(e.target)) dd.classList.remove('open');
+        });
 
         // ===== RÈGLEMENT =====
         function accepterReglement() {

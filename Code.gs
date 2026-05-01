@@ -412,7 +412,15 @@ function getStock() {
       if (!actif) catMap[cat][name].actif = false; // any inactive entry marks item as inactive
     });
 
-    const categories = Object.keys(catMap).sort().map(function(cat) {
+    // Sort categories: Matériaux first, then others alphabetically
+    const categories = Object.keys(catMap).sort(function(a, b) {
+      var aLow = a.toLowerCase(), bLow = b.toLowerCase();
+      var aIsMat = aLow.indexOf('mat') !== -1;
+      var bIsMat = bLow.indexOf('mat') !== -1;
+      if (aIsMat && !bIsMat) return -1;
+      if (!aIsMat && bIsMat) return 1;
+      return a.localeCompare(b, 'fr');
+    }).map(function(cat) {
       const items = Object.values(catMap[cat]).map(function(item) {
         // Sort entries by quality DESC
         item.entries.sort(function(a, b) { return b.qualite - a.qualite; });
@@ -423,8 +431,10 @@ function getStock() {
         const minorTotal = item.entries.slice(1).reduce(function(s, e) { return s + e.quantite; }, 0);
 
         // Alert level: 3=critique, 2=modéré, 1=attention, 0=aucun
+        // Items at 0 always get level 3 so they stay visible and sorted to top
         let alertLevel = 0;
-        if (item.seuil3 > 0 && totalAvail <= item.seuil3) alertLevel = 3;
+        if (totalAvail <= 0) alertLevel = 3;
+        else if (item.seuil3 > 0 && totalAvail <= item.seuil3) alertLevel = 3;
         else if (item.seuil2 > 0 && totalAvail <= item.seuil2) alertLevel = 2;
         else if (item.seuil1 > 0 && totalAvail <= item.seuil1) alertLevel = 1;
 
@@ -432,9 +442,17 @@ function getStock() {
           name: item.name, imageUrl: item.imageUrl, actif: item.actif,
           bestEntry: bestEntry, minorTotal: minorTotal,
           totalQty: totalQty, totalAvail: totalAvail, totalReserve: totalReserve,
-          alertLevel: alertLevel, seuil1: item.seuil1, seuil2: item.seuil2, seuil3: item.seuil3,
+          alertLevel: alertLevel, isEmpty: totalAvail <= 0,
+          seuil1: item.seuil1, seuil2: item.seuil2, seuil3: item.seuil3,
           entries: item.entries
         };
+      });
+      // Sort: empty items first, then by alert level descending, then alphabetically
+      items.sort(function(a, b) {
+        if (a.isEmpty && !b.isEmpty) return -1;
+        if (!a.isEmpty && b.isEmpty) return 1;
+        if (b.alertLevel !== a.alertLevel) return b.alertLevel - a.alertLevel;
+        return a.name.localeCompare(b.name, 'fr');
       });
       return { name: cat, items: items };
     });
@@ -533,6 +551,16 @@ function deleteStockItem(id, token) {
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === String(id)) {
+        const qty = Number(data[i][3]) || 0;
+        if (qty <= 0) {
+          // Don't delete empty stock — reset to qty=0 quality=500 so it stays visible as "to mine"
+          sheet.getRange(i + 1, 4).setValue(0);
+          sheet.getRange(i + 1, 5).setValue(500);
+          sheet.getRange(i + 1, 8).setValue(0); // clear reservation
+          _logStock(session.displayName || session.username,
+            'Réinitialisation (vide conservé) : ' + data[i][2]);
+          return { success: true, reset: true, message: 'Stock vide conservé et réinitialisé (à miner).' };
+        }
         _logStock(session.displayName || session.username,
           'Suppression : ' + data[i][2] + ' x' + data[i][3] + ' (Q:' + data[i][4] + ')');
         sheet.deleteRow(i + 1);
@@ -1955,8 +1983,9 @@ function _getDiscordId(username) {
 }
 
 /**
- * Envoie un message dans le salon webhook Discord.
- * Si discordIds est fourni (tableau de strings), les utilisateurs sont mentionnés (@).
+ * Ajoute un message à la file d'attente Discord (Script Properties).
+ * Le trigger flushDiscordQueue (toutes les minutes) envoie les messages un par un.
+ * Cela évite le rate-limit Discord (429) et garantit la livraison séquentielle.
  */
 function _discordWebhook(message, discordIds) {
   try {
@@ -1965,13 +1994,37 @@ function _discordWebhook(message, discordIds) {
       Logger.log('[Discord] DISCORD_WEBHOOK_URL non configuré — notification non envoyée.');
       return;
     }
-    // Construire les mentions si des IDs sont fournis
+    const props = PropertiesService.getScriptProperties();
+    const queue = _safeParse(props.getProperty('DISCORD_QUEUE'), []);
+    queue.push({ message: String(message), ids: discordIds || [], ts: Date.now() });
+    // Limiter la queue à 100 messages max
+    while (queue.length > 100) queue.shift();
+    props.setProperty('DISCORD_QUEUE', JSON.stringify(queue));
+  } catch (e) {
+    Logger.log('[Discord] _discordWebhook (enqueue) erreur: ' + e);
+  }
+}
+
+/**
+ * Envoie UN message de la file Discord. Appelé par un trigger toutes les minutes.
+ * Appeler setupDiscordQueueTrigger() une fois pour activer.
+ */
+function flushDiscordQueue() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const url = props.getProperty('DISCORD_WEBHOOK_URL');
+    if (!url) return;
+    const queue = _safeParse(props.getProperty('DISCORD_QUEUE'), []);
+    if (queue.length === 0) return;
+    const item = queue.shift();
+    // Toujours sauvegarder la queue réduite avant l'envoi (évite doublons si l'envoi crashe)
+    props.setProperty('DISCORD_QUEUE', JSON.stringify(queue));
     let mentions = '';
-    if (discordIds && discordIds.length > 0) {
-      mentions = discordIds.filter(Boolean).map(function(id) { return '<@' + id + '>'; }).join(' ') + '\n';
+    if (item.ids && item.ids.length > 0) {
+      mentions = item.ids.filter(Boolean).map(function(id) { return '<@' + id + '>'; }).join(' ') + '\n';
     }
     const payload = {
-      content: (mentions + String(message)).substring(0, 2000),
+      content: (mentions + String(item.message)).substring(0, 2000),
       username: 'Sibylla'
     };
     const resp = UrlFetchApp.fetch(url, {
@@ -1980,12 +2033,29 @@ function _discordWebhook(message, discordIds) {
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
-    if (resp.getResponseCode() !== 204 && resp.getResponseCode() !== 200) {
-      Logger.log('[Discord] Erreur webhook — HTTP ' + resp.getResponseCode() + ' : ' + resp.getContentText());
+    if (resp.getResponseCode() === 429) {
+      // Rate limited : remettre le message en tête de file
+      queue.unshift(item);
+      props.setProperty('DISCORD_QUEUE', JSON.stringify(queue));
+      Logger.log('[Discord] Rate-limit 429, message remis en file.');
+    } else if (resp.getResponseCode() !== 204 && resp.getResponseCode() !== 200) {
+      Logger.log('[Discord] Erreur envoi — HTTP ' + resp.getResponseCode() + ' : ' + resp.getContentText());
     }
   } catch (e) {
-    Logger.log('[Discord] _discordWebhook erreur: ' + e);
+    Logger.log('[Discord] flushDiscordQueue erreur: ' + e);
   }
+}
+
+/**
+ * Active le trigger toutes les minutes pour flushDiscordQueue.
+ * À exécuter une seule fois depuis l'éditeur Apps Script.
+ */
+function setupDiscordQueueTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === 'flushDiscordQueue') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('flushDiscordQueue').timeBased().everyMinutes(1).create();
+  Logger.log('[Discord] Trigger flushDiscordQueue activé (toutes les minutes).');
 }
 
 /**

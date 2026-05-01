@@ -95,6 +95,7 @@
         .stock-card:hover { border-color:rgba(255,255,255,.16); transform:translateY(-1px); }
         .stock-card.disabled { opacity:.45; filter:grayscale(.5); }
         .stock-card.alert-3 { border-color:rgba(255,107,107,.35); }
+        .stock-card.empty { border-color:rgba(255,107,107,.6); background:rgba(255,107,107,.04); }
         .stock-card.alert-2 { border-color:rgba(255,179,71,.3); }
         .stock-card.alert-1 { border-color:rgba(250,218,125,.25); }
 
@@ -132,6 +133,8 @@
         .alert-badge.lvl-2 { color:var(--sib-orange); background:rgba(255,179,71,.1);  border:1px solid rgba(255,179,71,.3); }
         .alert-badge.lvl-1 { color:var(--sib-gold);   background:rgba(250,218,125,.08); border:1px solid rgba(250,218,125,.25); }
         .alert-badge.disabled-badge { color:var(--sib-muted); background:rgba(255,255,255,.04); border:1px solid var(--sib-border); }
+        .alert-badge.empty-badge { color:#fff; background:rgba(255,107,107,.25); border:1px solid rgba(255,107,107,.6); animation:pulse-empty 2s infinite; }
+        @keyframes pulse-empty { 0%,100%{opacity:1} 50%{opacity:.65} }
 
         /* Card body */
         .stock-card-body {
@@ -292,6 +295,8 @@
         var badgeHtml = '';
         if (!item.actif) {
             badgeHtml = '<span class="alert-badge disabled-badge">○ Off</span>';
+        } else if (item.isEmpty) {
+            badgeHtml = '<span class="alert-badge empty-badge">⛏ À MINER</span>';
         } else if (item.alertLevel === 3) {
             badgeHtml = '<span class="alert-badge lvl-3">▲ Critique</span>';
         } else if (item.alertLevel === 2) {
@@ -318,7 +323,7 @@
             ? '<div class="stock-card-footer"><div class="reserve-note">⏳ ' + item.totalReserve + ' réservé(s) pour des Blueprints en cours</div></div>'
             : '';
 
-        var alertClass = !item.actif ? ' disabled' : item.alertLevel > 0 ? ' alert-' + item.alertLevel : '';
+        var alertClass = !item.actif ? ' disabled' : item.isEmpty ? ' alert-3 empty' : item.alertLevel > 0 ? ' alert-' + item.alertLevel : '';
 
         return '<div class="stock-card' + alertClass + '">' +
             '<div class="stock-card-header">' + imgHtml +
