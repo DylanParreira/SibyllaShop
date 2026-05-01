@@ -207,6 +207,7 @@
     <div class="header-right">
         <a class="btn-nav" style="border-color:rgba(77,163,255,.35);color:#4da3ff" href="<?= appUrl ?>?page=vendeur&token=<?= vendeurToken ?>">◀ Mon panel</a>
         <a class="btn-nav" href="<?= appUrl ?>?page=craft-admin&token=<?= vendeurToken ?>">📘 Blueprint Admin</a>
+        <a class="btn-nav" style="border-color:rgba(79,255,176,.3);color:var(--sib-green)" href="<?= appUrl ?>?page=stock-chart&token=<?= vendeurToken ?>">📈 Graphiques</a>
         <div class="view-switcher">
             <button class="btn-view" onclick="toggleViewDropdown()">👁 Vue membre ▾</button>
             <div class="view-dropdown" id="viewDropdown">
@@ -327,6 +328,12 @@
                 <input class="form-input" type="number" id="msSeuil3" min="0" placeholder="0">
                 <div class="form-hint">Alerte rouge si qté ≤ valeur</div>
             </div>
+        </div>
+        <div class="modal-section-title" style="margin-top:1rem">Objectif de stock</div>
+        <div class="form-group">
+            <label class="form-label">Cible (cSCU) <span style="color:var(--sib-green)">◎</span></label>
+            <input class="form-input" type="number" id="msCible" min="0" placeholder="0">
+            <div class="form-hint">Affiché comme barre de progression sur les cartes membres</div>
         </div>
         <div style="display:flex;gap:.7rem;margin-top:1.2rem">
             <button class="btn-add" id="matSeuilsSaveBtn" onclick="saveMatSeuils()" style="flex:1">Enregistrer</button>
@@ -800,11 +807,13 @@
         var html = filtered.map(function(m) {
             var isBp = m.source === 'blueprint';
             var s1 = m.seuil1 > 0, s2 = m.seuil2 > 0, s3 = m.seuil3 > 0;
+            var hasCible = m.cible > 0;
             var seuilsHtml =
                 '<div class="wm-seuils">' +
                 '<div class="wm-seuil"><span class="wm-seuil-lbl">Alerte</span><span class="wm-seuil-val '+(s1?'set':'unset')+'">'+( s1 ? '≤'+m.seuil1 : '—')+'</span></div>' +
                 '<div class="wm-seuil"><span class="wm-seuil-lbl">Bas</span><span class="wm-seuil-val '+(s2?'set':'unset')+'">'+( s2 ? '≤'+m.seuil2 : '—')+'</span></div>' +
                 '<div class="wm-seuil"><span class="wm-seuil-lbl">Critique</span><span class="wm-seuil-val '+(s3?'set':'unset')+'">'+( s3 ? '≤'+m.seuil3 : '—')+'</span></div>' +
+                '<div class="wm-seuil"><span class="wm-seuil-lbl" style="color:var(--sib-green)">Cible</span><span class="wm-seuil-val '+(hasCible?'set':'unset')+'" style="'+(hasCible?'color:var(--sib-green)':'')+'">'+( hasCible ? m.cible : '—')+'</span></div>' +
                 '</div>';
             var delBtn = isBp ? '' : '<button class="btn-cat-del" onclick="deleteCatMaterial(\''+esc(m.name)+'\')">✕</button>';
             return '<div class="wm-card '+(isBp?'bp':'manual')+'">' +
@@ -812,7 +821,7 @@
                 seuilsHtml +
                 '<div class="wm-card-footer">' +
                 '<button class="btn-cat-stock" onclick="addToStockFromCatalogue(\''+esc(m.name)+'\','+m.seuil1+','+m.seuil2+','+m.seuil3+')">+ Stock</button>' +
-                '<button class="btn-cat-seuils" onclick="openMatSeuils(\''+esc(m.name)+'\','+m.seuil1+','+m.seuil2+','+m.seuil3+')">⚙ Seuils</button>' +
+                '<button class="btn-cat-seuils" onclick="openMatSeuils(\''+esc(m.name)+'\','+m.seuil1+','+m.seuil2+','+m.seuil3+','+(m.cible||0)+')">⚙ Seuils</button>' +
                 delBtn +
                 '</div>' +
                 '</div>';
@@ -838,12 +847,13 @@
 
     // — Seuils matériau
     var matSeuilsName = '';
-    function openMatSeuils(name, s1, s2, s3) {
+    function openMatSeuils(name, s1, s2, s3, cible) {
         matSeuilsName = name;
         document.getElementById('matSeuilsTitle').textContent = 'Seuils — ' + name;
         document.getElementById('msSeuil1').value = s1 || '';
         document.getElementById('msSeuil2').value = s2 || '';
         document.getElementById('msSeuil3').value = s3 || '';
+        document.getElementById('msCible').value  = cible || '';
         document.getElementById('matSeuilsModal').classList.add('active');
     }
     function closeMatSeuilsModal() { document.getElementById('matSeuilsModal').classList.remove('active'); }
@@ -852,21 +862,25 @@
     function saveMatSeuils() {
         var btn = document.getElementById('matSeuilsSaveBtn');
         btn.disabled = true; btn.textContent = '⏳';
+        var s1 = parseInt(document.getElementById('msSeuil1').value)||0;
+        var s2 = parseInt(document.getElementById('msSeuil2').value)||0;
+        var s3 = parseInt(document.getElementById('msSeuil3').value)||0;
+        var cible = parseInt(document.getElementById('msCible').value)||0;
         google.script.run
             .withSuccessHandler(function(r) {
-                btn.disabled = false; btn.textContent = 'Enregistrer';
-                if (r.success) {
-                    showToast('Seuils enregistrés.', 'success');
-                    closeMatSeuilsModal();
-                    loadCatalogue();
-                } else showToast(r.message || 'Erreur.', 'error');
+                if (!r.success) { btn.disabled=false; btn.textContent='Enregistrer'; showToast(r.message||'Erreur.','error'); return; }
+                // Save cible separately
+                google.script.run
+                    .withSuccessHandler(function(r2) {
+                        btn.disabled = false; btn.textContent = 'Enregistrer';
+                        if (r2.success) { showToast('Seuils et objectif enregistrés.', 'success'); closeMatSeuilsModal(); loadCatalogue(); }
+                        else showToast(r2.message || 'Erreur cible.', 'error');
+                    })
+                    .withFailureHandler(function(){ btn.disabled=false; btn.textContent='Enregistrer'; showToast('Erreur serveur.','error'); })
+                    .setStockTarget(matSeuilsName, cible, TOKEN);
             })
             .withFailureHandler(function(){ btn.disabled=false; btn.textContent='Enregistrer'; showToast('Erreur serveur.','error'); })
-            .saveMaterialSeuils(matSeuilsName,
-                parseInt(document.getElementById('msSeuil1').value)||0,
-                parseInt(document.getElementById('msSeuil2').value)||0,
-                parseInt(document.getElementById('msSeuil3').value)||0,
-                TOKEN);
+            .saveMaterialSeuils(matSeuilsName, s1, s2, s3, TOKEN);
     }
 
     // — Ajout matériau manuel

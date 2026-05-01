@@ -199,6 +199,21 @@
 
         .reserve-note { font-size:.74rem; color:rgba(255,179,71,.75); }
 
+        /* ===== PROGRESS BAR (OBJECTIF) ===== */
+        .progress-wrap { margin-top:.55rem; }
+        .progress-labels { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.3rem; }
+        .progress-current { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.8rem; color:var(--sib-text); }
+        .progress-target  { font-size:.7rem; color:var(--sib-muted); }
+        .progress-bar { height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
+        .progress-fill { height:100%; border-radius:2px; transition:width .7s cubic-bezier(.4,0,.2,1); }
+        .progress-fill.p-crit { background:linear-gradient(90deg,#ff4444,#ff6b6b); }
+        .progress-fill.p-low  { background:linear-gradient(90deg,#ff8c00,#ffb347); }
+        .progress-fill.p-med  { background:linear-gradient(90deg,#c8a200,#fada7d); }
+        .progress-fill.p-good { background:linear-gradient(90deg,#00c96e,#4fffb0); }
+
+        /* ===== SPARKLINE ===== */
+        .sparkline-wrap { margin-top:.55rem; height:32px; overflow:hidden; }
+
         /* ===== EMPTY ===== */
         .empty-block {
             text-align:center; padding:3rem; color:var(--sib-muted);
@@ -260,6 +275,7 @@
     const TOKEN = '<?= vendeurToken ?>';
     let stockData = null;
     let activeCat = 'all';
+    let historyData = {};
 
     window.onload = function() {
         loadUserInfo();
@@ -273,9 +289,52 @@
 
     function loadStock() {
         google.script.run
-            .withSuccessHandler(function(data) { stockData = data; buildFilters(); applyFilters(); })
+            .withSuccessHandler(function(data) { stockData = data; buildFilters(); applyFilters(); loadHistory(); })
             .withFailureHandler(function() { showError(); })
             .getStock();
+    }
+
+    function loadHistory() {
+        if (!stockData) return;
+        var names = [];
+        stockData.categories.forEach(function(cat) { cat.items.forEach(function(item) { names.push(item.name); }); });
+        google.script.run
+            .withSuccessHandler(function(result) { historyData = result.history || {}; updateSparklines(); })
+            .withFailureHandler(function() {})
+            .getStockHistory(names, 14, TOKEN);
+    }
+
+    function updateSparklines() {
+        document.querySelectorAll('[data-sparkline]').forEach(function(el) {
+            var name = el.getAttribute('data-sparkline');
+            var hist = historyData[name] || [];
+            if (hist.length < 2) return;
+            hist.sort(function(a, b) { return a.date.localeCompare(b.date); });
+            var vals = hist.map(function(h) { return h.val; });
+            el.innerHTML = sparklineSvg(vals, el.offsetWidth || 200, 30);
+        });
+    }
+
+    function sparklineSvg(values, w, h) {
+        var min = Math.min.apply(null, values);
+        var max = Math.max.apply(null, values);
+        var range = max - min || 1;
+        var pad = 3;
+        var pts = values.map(function(v, i) {
+            var x = (i / (values.length - 1)) * w;
+            var y = h - pad - ((v - min) / range) * (h - pad * 2);
+            return x.toFixed(1) + ',' + y.toFixed(1);
+        });
+        var last = values[values.length - 1], first = values[0];
+        var color = last >= first ? '#4fffb0' : '#ff6b6b';
+        var areaClose = ' ' + w + ',' + h + ' 0,' + h + ' Z';
+        return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">' +
+            '<defs><linearGradient id="sg' + Math.random().toString(36).slice(2,7) + '" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0%" stop-color="' + color + '" stop-opacity=".18"/>' +
+            '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>' +
+            '<polygon points="' + pts.join(' ') + areaClose + '" fill="' + color + '" opacity=".15"/>' +
+            '<polyline points="' + pts.join(' ') + '" stroke="' + color + '" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>' +
+            '</svg>';
     }
 
     function buildFilters() {
@@ -350,6 +409,7 @@
             container.innerHTML = '<div class="empty-block"><div class="ico">🔍</div><p>Aucune ressource trouvée.</p></div>';
         } else {
             container.innerHTML = html;
+            if (Object.keys(historyData).length > 0) updateSparklines();
         }
     }
 
@@ -385,6 +445,20 @@
             qualityHtml = '<span class="no-stock">Aucun stock</span>';
         }
 
+        // Progress bar (objectif de stock)
+        var progressHtml = '';
+        if (item.cible > 0) {
+            var pct = Math.min(100, Math.round(item.totalAvail / item.cible * 100));
+            var pCls = pct < 30 ? 'p-crit' : pct < 60 ? 'p-low' : pct < 90 ? 'p-med' : 'p-good';
+            progressHtml = '<div class="progress-wrap">' +
+                '<div class="progress-labels">' +
+                '<span class="progress-current">' + item.totalAvail + ' / ' + item.cible + ' cSCU</span>' +
+                '<span class="progress-target">' + pct + '%</span>' +
+                '</div>' +
+                '<div class="progress-bar"><div class="progress-fill ' + pCls + '" style="width:' + pct + '%"></div></div>' +
+                '</div>';
+        }
+
         // Reserve footer
         var footerHtml = item.totalReserve > 0
             ? '<div class="stock-card-footer"><div class="reserve-note">⏳ ' + item.totalReserve + ' réservé(s) pour des Blueprints en cours</div></div>'
@@ -399,7 +473,11 @@
             badgeHtml +
             '</div>' +
             '</div>' +
-            '<div class="stock-card-body"><div class="quality-display">' + qualityHtml + '</div></div>' +
+            '<div class="stock-card-body">' +
+            '<div class="quality-display">' + qualityHtml + '</div>' +
+            progressHtml +
+            '<div class="sparkline-wrap" data-sparkline="' + esc(item.name) + '"></div>' +
+            '</div>' +
             footerHtml +
             '</div>';
     }

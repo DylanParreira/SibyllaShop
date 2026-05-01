@@ -383,6 +383,17 @@ function getStock() {
     if (!sheet || sheet.getLastRow() <= 1) return { categories: [] };
     const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 12).getValues();
 
+    // Cible (objectif) par item depuis MATERIALS_CONFIG col 6
+    const cibleMap = {};
+    try {
+      const cfgSheet = _getSheet('MATERIALS_CONFIG');
+      if (cfgSheet && cfgSheet.getLastRow() > 1) {
+        cfgSheet.getRange(2, 1, cfgSheet.getLastRow() - 1, 6).getValues().forEach(function(r) {
+          if (r[0]) cibleMap[String(r[0]).toLowerCase()] = Number(r[5]) || 0;
+        });
+      }
+    } catch(e) {}
+
     const catMap = {};
     data.forEach(function(row) {
       if (!row[0]) return;
@@ -439,6 +450,7 @@ function getStock() {
           totalQty: totalQty, totalAvail: totalAvail, totalReserve: totalReserve,
           alertLevel: alertLevel, isEmpty: totalAvail <= 0,
           seuil1: item.seuil1, seuil2: item.seuil2, seuil3: item.seuil3,
+          cible: cibleMap[item.name.toLowerCase()] || 0,
           entries: item.entries
         };
       });
@@ -465,6 +477,15 @@ function getStockAdmin(token) {
     const sheet = _getSheet('STOCK');
     if (!sheet || sheet.getLastRow() <= 1) return { items: [], log: [] };
     const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 12).getValues();
+    const adminCibleMap = {};
+    try {
+      const cfgSheet = _getSheet('MATERIALS_CONFIG');
+      if (cfgSheet && cfgSheet.getLastRow() > 1) {
+        cfgSheet.getRange(2, 1, cfgSheet.getLastRow() - 1, 6).getValues().forEach(function(r) {
+          if (r[0]) adminCibleMap[String(r[0]).toLowerCase()] = Number(r[5]) || 0;
+        });
+      }
+    } catch(e) {}
     const items = data.filter(function(r) { return r[0]; }).map(function(r) {
       return {
         id: String(r[0]), categorie: String(r[1] || ''), item: String(r[2] || ''),
@@ -472,7 +493,8 @@ function getStockAdmin(token) {
         unite: String(r[5] || 'unité'), imageUrl: String(r[6] || ''),
         reserve: Number(r[7]) || 0,
         seuil1: Number(r[8]) || 0, seuil2: Number(r[9]) || 0, seuil3: Number(r[10]) || 0,
-        actif: _isActif(r[11])
+        actif: _isActif(r[11]),
+        cible: adminCibleMap[String(r[2] || '').toLowerCase()] || 0
       };
     });
     const log = getStockLog(token).logs || [];
@@ -1635,10 +1657,11 @@ function getMaterialsCatalogue(token) {
     const configSheet = _getSheet('MATERIALS_CONFIG');
     const configs = {};
     if (configSheet && configSheet.getLastRow() > 1) {
-      configSheet.getRange(2, 1, configSheet.getLastRow() - 1, 5).getValues().forEach(function(r) {
+      configSheet.getRange(2, 1, configSheet.getLastRow() - 1, 6).getValues().forEach(function(r) {
         if (r[0]) configs[String(r[0]).toLowerCase()] = {
           name: String(r[0]), source: String(r[1] || 'manual'),
-          seuil1: Number(r[2]) || 0, seuil2: Number(r[3]) || 0, seuil3: Number(r[4]) || 0
+          seuil1: Number(r[2]) || 0, seuil2: Number(r[3]) || 0, seuil3: Number(r[4]) || 0,
+          cible: Number(r[5]) || 0
         };
       });
     }
@@ -1648,14 +1671,15 @@ function getMaterialsCatalogue(token) {
     Object.keys(bpNames).sort().forEach(function(key) {
       const cfg = configs[key] || {};
       items.push({ name: bpNames[key], source: 'blueprint',
-        seuil1: cfg.seuil1 || 0, seuil2: cfg.seuil2 || 0, seuil3: cfg.seuil3 || 0 });
+        seuil1: cfg.seuil1 || 0, seuil2: cfg.seuil2 || 0, seuil3: cfg.seuil3 || 0,
+        cible: cfg.cible || 0 });
     });
     // 2. Matériaux manuels non couverts par les blueprints
     Object.keys(configs).sort().forEach(function(key) {
       if (!bpNames[key] && configs[key].source === 'manual') {
         const cfg = configs[key];
         items.push({ name: cfg.name, source: 'manual',
-          seuil1: cfg.seuil1, seuil2: cfg.seuil2, seuil3: cfg.seuil3 });
+          seuil1: cfg.seuil1, seuil2: cfg.seuil2, seuil3: cfg.seuil3, cible: cfg.cible || 0 });
       }
     });
 
@@ -1895,7 +1919,7 @@ function doGet(e) {
   }
 
   // Pages protégées admin
-  const adminPages = ['vendeur', 'stock-admin', 'craft-admin'];
+  const adminPages = ['vendeur', 'stock-admin', 'craft-admin', 'stock-chart'];
   if (adminPages.indexOf(page) !== -1) {
     const session = validateToken(token);
     if (!session) {
@@ -1905,7 +1929,7 @@ function doGet(e) {
       tpl.fromPage = page;
       return tpl.evaluate().setTitle('Connexion - Sibylla');
     }
-    if ((page === 'stock-admin' || page === 'craft-admin') && (session.role || 0) < 1) {
+    if ((page === 'stock-admin' || page === 'craft-admin' || page === 'stock-chart') && (session.role || 0) < 1) {
       const tpl = HtmlService.createTemplateFromFile('Login');
       tpl.appUrl   = appUrl;
       tpl.errorMsg = 'Accès réservé aux gestionnaires.';
@@ -1924,7 +1948,8 @@ function doGet(e) {
     'stock':       { file: 'Stock',        title: 'Stock - Sibylla' },
     'craft':       { file: 'Craft',        title: 'Blueprint - Sibylla' },
     'stock-admin': { file: 'StockAdmin',   title: 'Stock Admin - Sibylla' },
-    'craft-admin': { file: 'CraftAdmin',   title: 'Blueprint Admin - Sibylla' }
+    'craft-admin': { file: 'CraftAdmin',   title: 'Blueprint Admin - Sibylla' },
+    'stock-chart': { file: 'StockChart',   title: 'Graphiques Stock - Sibylla' }
   };
 
   const p = pages[page] || pages['index'];
@@ -2090,4 +2115,130 @@ function testDiscordWebhook() {
   Logger.log('[Test Discord] Envoi d\'un message test via webhook...');
   _discordWebhook('✅ **Test Sibylla**\nLe webhook fonctionne correctement !', []);
   Logger.log('[Test Discord] Terminé. Vérifie le salon Discord.');
+}
+
+// ============================================
+// OBJECTIFS DE STOCK — cible par item
+// Stockée dans MATERIALS_CONFIG colonne 6 (Cible)
+// ============================================
+
+function setStockTarget(name, cible, token) {
+  try {
+    const session = validateToken(token);
+    if (!session || (session.role || 0) < 1) return { success: false, message: 'Accès refusé.' };
+    let sheet = _getSheet('MATERIALS_CONFIG');
+    if (!sheet) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('MATERIALS_CONFIG');
+      sheet.appendRow(['Name', 'Source', 'Seuil1', 'Seuil2', 'Seuil3', 'Cible']);
+    }
+    const nameLow = String(name).toLowerCase();
+    if (sheet.getLastRow() > 1) {
+      const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+      for (let i = 0; i < data.length; i++) {
+        if (String(data[i][0]).toLowerCase() === nameLow) {
+          sheet.getRange(i + 2, 6).setValue(Number(cible) || 0);
+          return { success: true };
+        }
+      }
+    }
+    // Item absent du catalogue : l'ajouter comme entrée manuelle
+    const bpSheet = _getSheet('WIKI_BLUEPRINTS');
+    let source = 'manual';
+    if (bpSheet && bpSheet.getLastRow() > 1) {
+      const bpData = bpSheet.getRange(2, 1, bpSheet.getLastRow() - 1, 6).getValues();
+      outer: for (let j = 0; j < bpData.length; j++) {
+        const ings = _safeParse(bpData[j][5], []);
+        for (let k = 0; k < ings.length; k++) {
+          if (String(ings[k].name || '').toLowerCase() === nameLow) { source = 'blueprint'; break outer; }
+        }
+      }
+    }
+    sheet.appendRow([name, source, 0, 0, 0, Number(cible) || 0]);
+    return { success: true };
+  } catch(e) { return { success: false, message: String(e) }; }
+}
+
+// ============================================
+// HISTORIQUE STOCK — snapshots journaliers
+// STOCK_HISTORY: Date(0), ItemName(1), TotalAvail(2)
+// Appeler setupStockHistoryTrigger() une fois pour activer le snapshot quotidien.
+// ============================================
+
+function snapshotStockHistory() {
+  try {
+    const sheet = _getSheet('STOCK');
+    if (!sheet || sheet.getLastRow() <= 1) return;
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 12).getValues();
+    const totals = {};
+    data.forEach(function(r) {
+      if (!r[0] || !_isActif(r[11])) return;
+      const name = String(r[2]);
+      const avail = Math.max(0, (Number(r[3]) || 0) - (Number(r[7]) || 0));
+      totals[name] = (totals[name] || 0) + avail;
+    });
+    let histSheet = _getSheet('STOCK_HISTORY');
+    if (!histSheet) {
+      histSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('STOCK_HISTORY');
+      histSheet.appendRow(['Date', 'ItemName', 'TotalAvail']);
+    }
+    const date = Utilities.formatDate(new Date(), 'Europe/Paris', 'dd/MM/yyyy');
+    const rows = Object.keys(totals).map(function(name) { return [date, name, totals[name]]; });
+    if (rows.length > 0) histSheet.getRange(histSheet.getLastRow() + 1, 1, rows.length, 3).setValues(rows);
+    _pruneStockHistory(90);
+  } catch(e) { Logger.log('Erreur snapshotStockHistory: ' + e); }
+}
+
+function _pruneStockHistory(keepDays) {
+  try {
+    const sheet = _getSheet('STOCK_HISTORY');
+    if (!sheet || sheet.getLastRow() <= 1) return;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - keepDays);
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+    for (let i = data.length - 1; i >= 0; i--) {
+      const parts = String(data[i][0]).split('/');
+      const d = new Date(parts[2] + '-' + parts[1] + '-' + parts[0]);
+      if (!isNaN(d.getTime()) && d < cutoff) sheet.deleteRow(i + 2);
+    }
+  } catch(e) {}
+}
+
+function setupStockHistoryTrigger(token) {
+  try {
+    const session = validateToken(token);
+    if (!session || (session.role || 0) < 1) return { success: false, message: 'Accès refusé.' };
+    ScriptApp.getProjectTriggers().forEach(function(t) {
+      if (t.getHandlerFunction() === 'snapshotStockHistory') ScriptApp.deleteTrigger(t);
+    });
+    ScriptApp.newTrigger('snapshotStockHistory').timeBased().everyDays(1).atHour(3).create();
+    Logger.log('[History] Trigger snapshotStockHistory activé (chaque jour à 3h).');
+    return { success: true };
+  } catch(e) { return { success: false, message: String(e) }; }
+}
+
+function getStockHistory(itemNames, days, token) {
+  try {
+    const session = validateToken(token);
+    if (!session) return { error: 'Connexion requise.' };
+    const sheet = _getSheet('STOCK_HISTORY');
+    if (!sheet || sheet.getLastRow() <= 1) return { history: {} };
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - (days || 14));
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+    const names = Array.isArray(itemNames)
+      ? itemNames.map(function(n) { return String(n).toLowerCase(); })
+      : [];
+    const result = {};
+    data.forEach(function(r) {
+      if (!r[0] || !r[1]) return;
+      const name = String(r[1]);
+      if (names.length > 0 && names.indexOf(name.toLowerCase()) === -1) return;
+      const parts = String(r[0]).split('/');
+      if (parts.length !== 3) return;
+      const d = new Date(parts[2] + '-' + parts[1] + '-' + parts[0]);
+      if (!isNaN(d.getTime()) && d >= cutoff) {
+        if (!result[name]) result[name] = [];
+        result[name].push({ date: String(r[0]), val: Number(r[2]) || 0 });
+      }
+    });
+    return { history: result };
+  } catch(e) { Logger.log('Erreur getStockHistory: ' + e); return { history: {} }; }
 }
