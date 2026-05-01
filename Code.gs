@@ -412,13 +412,8 @@ function getStock() {
       if (!actif) catMap[cat][name].actif = false; // any inactive entry marks item as inactive
     });
 
-    // Sort categories: Matériaux first, then others alphabetically
+    // Sort categories alphabetically (Gemmes < Matériaux)
     const categories = Object.keys(catMap).sort(function(a, b) {
-      var aLow = a.toLowerCase(), bLow = b.toLowerCase();
-      var aIsMat = aLow.indexOf('mat') !== -1;
-      var bIsMat = bLow.indexOf('mat') !== -1;
-      if (aIsMat && !bIsMat) return -1;
-      if (!aIsMat && bIsMat) return 1;
       return a.localeCompare(b, 'fr');
     }).map(function(cat) {
       const items = Object.values(catMap[cat]).map(function(item) {
