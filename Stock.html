@@ -135,13 +135,13 @@
             border-bottom:1px solid var(--sib-border);
         }
         .stock-card-img {
-            width:80px; height:80px; border-radius:9px; object-fit:cover; flex-shrink:0;
+            width:56px; height:56px; border-radius:8px; object-fit:cover; flex-shrink:0;
             border:1px solid var(--sib-border); background:rgba(255,255,255,.04);
         }
         .stock-card-img-ph {
-            width:80px; height:80px; border-radius:9px; flex-shrink:0;
+            width:56px; height:56px; border-radius:8px; flex-shrink:0;
             border:1px solid var(--sib-border); background:rgba(255,255,255,.04);
-            display:flex; align-items:center; justify-content:center; font-size:2rem; opacity:.4;
+            display:flex; align-items:center; justify-content:center; font-size:1.5rem; opacity:.4;
         }
         .stock-card-header-info {
             flex:1; min-width:0; display:flex; flex-direction:column; gap:.4rem;
@@ -212,11 +212,12 @@
         .progress-fill.p-good { background:linear-gradient(90deg,#00c96e,#4fffb0); }
 
         /* ===== SPARKLINE ===== */
-        .sparkline-wrap { margin-top:.55rem; height:32px; overflow:hidden; }
+        .sparkline-wrap { height:0; overflow:hidden; transition:height .3s ease, margin-top .3s ease; }
+        .sparkline-wrap.has-data { height:32px; margin-top:.5rem; }
 
-        /* ===== CHART LINK ===== */
-        .chart-link { display:inline-flex; align-items:center; gap:.25rem; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.7rem; letter-spacing:.08em; color:rgba(64,224,255,.5); text-decoration:none; margin-top:.4rem; transition:color .2s; }
-        .chart-link:hover { color:var(--sib-accent1); }
+        /* ===== CARD CLICKABLE ===== */
+        .stock-card.navigable { cursor:pointer; }
+        .stock-card.navigable:hover { border-color:rgba(64,224,255,.3); }
 
         /* ===== EMPTY ===== */
         .empty-block {
@@ -278,7 +279,7 @@
 <script>
     const TOKEN     = '<?= vendeurToken ?>';
     const APP_URL   = '<?= appUrl ?>';
-    const USER_ROLE = '<?= userRole ?>';
+    const USER_ROLE = parseInt('<?= userRole ?>', 10) || 0;
     let stockData = null;
     let activeCat = 'all';
     let historyData = {};
@@ -313,10 +314,14 @@
     function updateSparklines() {
         document.querySelectorAll('[data-sparkline]').forEach(function(el) {
             var name = el.getAttribute('data-sparkline');
-            var hist = historyData[name] || [];
+            var hist = (historyData[name] || []).slice();
             if (hist.length < 2) return;
-            hist.sort(function(a, b) { return a.date.localeCompare(b.date); });
+            hist.sort(function(a, b) {
+                var pa = a.date.split('/'), pb = b.date.split('/');
+                return new Date(pa[2]+'-'+pa[1]+'-'+pa[0]) - new Date(pb[2]+'-'+pb[1]+'-'+pb[0]);
+            });
             var vals = hist.map(function(h) { return h.val; });
+            el.classList.add('has-data');
             el.innerHTML = sparklineSvg(vals, el.offsetWidth || 200, 30);
         });
     }
@@ -471,8 +476,10 @@
             : '';
 
         var alertClass = !item.actif ? ' disabled' : item.isEmpty ? ' alert-3 empty' : item.alertLevel > 0 ? ' alert-' + item.alertLevel : '';
+        var navigable = USER_ROLE >= 1 ? ' navigable' : '';
+        var onclick = USER_ROLE >= 1 ? ' onclick="goToChart(\'' + esc(item.name).replace(/'/g, '&#39;') + '\')"' : '';
 
-        return '<div class="stock-card' + alertClass + '">' +
+        return '<div class="stock-card' + alertClass + navigable + '"' + onclick + '>' +
             '<div class="stock-card-header">' + imgHtml +
             '<div class="stock-card-header-info">' +
             '<span class="stock-card-name">' + esc(item.name) + '</span>' +
@@ -483,10 +490,14 @@
             '<div class="quality-display">' + qualityHtml + '</div>' +
             progressHtml +
             '<div class="sparkline-wrap" data-sparkline="' + esc(item.name) + '"></div>' +
-            (USER_ROLE >= 1 ? '<a class="chart-link" href="' + APP_URL + '?page=stock-chart&token=' + TOKEN + '&resource=' + encodeURIComponent(item.name) + '">📈 Voir graphique</a>' : '') +
             '</div>' +
             footerHtml +
             '</div>';
+    }
+
+    function goToChart(name) {
+        if (USER_ROLE < 1) return;
+        window.location.href = APP_URL + '?page=stock-chart&token=' + TOKEN + '&resource=' + encodeURIComponent(name);
     }
 
     function getQualiteInfo(q) {

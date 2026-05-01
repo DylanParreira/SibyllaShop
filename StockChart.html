@@ -273,7 +273,10 @@
         var labels = buildDateLabels();
         var datasets = selectedResources.map(function(res) {
             var hist = (historyCache[res.name] || []).slice();
-            hist.sort(function(a,b){ return a.date.localeCompare(b.date); });
+            hist.sort(function(a,b){
+                var pa=a.date.split('/'), pb=b.date.split('/');
+                return new Date(pa[2]+'-'+pa[1]+'-'+pa[0]) - new Date(pb[2]+'-'+pb[1]+'-'+pb[0]);
+            });
             // Map to labels
             var dataMap = {};
             hist.forEach(function(h){ dataMap[h.date] = h.val; });
@@ -361,7 +364,10 @@
     function renderStats() {
         var html = selectedResources.map(function(res) {
             var hist = (historyCache[res.name] || []).slice();
-            hist.sort(function(a,b){ return a.date.localeCompare(b.date); });
+            hist.sort(function(a,b){
+                var pa=a.date.split('/'), pb=b.date.split('/');
+                return new Date(pa[2]+'-'+pa[1]+'-'+pa[0]) - new Date(pb[2]+'-'+pb[1]+'-'+pb[0]);
+            });
             var vals = hist.map(function(h){ return h.val; });
             var last = vals.length > 0 ? vals[vals.length-1] : null;
             var first = vals.length > 0 ? vals[0] : null;
