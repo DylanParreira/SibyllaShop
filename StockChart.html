@@ -153,7 +153,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-    const TOKEN = '<?= vendeurToken ?>';
+    const TOKEN          = '<?= vendeurToken ?>';
+    const RESOURCE_PARAM = '<?= resourceParam ?>';
 
     const CHART_COLORS = [
         '#40e0ff', '#4fffb0', '#fada7d', '#ff6b6b',
@@ -181,6 +182,7 @@
                 });
                 allItemNames = Array.from(names).sort(function(a,b){ return a.localeCompare(b,'fr'); });
                 filterAutocomplete();
+                if (RESOURCE_PARAM) addResource(RESOURCE_PARAM);
             })
             .withFailureHandler(function(){})
             .getStock();

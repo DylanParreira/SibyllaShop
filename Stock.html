@@ -214,6 +214,10 @@
         /* ===== SPARKLINE ===== */
         .sparkline-wrap { margin-top:.55rem; height:32px; overflow:hidden; }
 
+        /* ===== CHART LINK ===== */
+        .chart-link { display:inline-flex; align-items:center; gap:.25rem; font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.7rem; letter-spacing:.08em; color:rgba(64,224,255,.5); text-decoration:none; margin-top:.4rem; transition:color .2s; }
+        .chart-link:hover { color:var(--sib-accent1); }
+
         /* ===== EMPTY ===== */
         .empty-block {
             text-align:center; padding:3rem; color:var(--sib-muted);
@@ -272,7 +276,9 @@
 </div>
 
 <script>
-    const TOKEN = '<?= vendeurToken ?>';
+    const TOKEN     = '<?= vendeurToken ?>';
+    const APP_URL   = '<?= appUrl ?>';
+    const USER_ROLE = <?= userRole ?>;
     let stockData = null;
     let activeCat = 'all';
     let historyData = {};
@@ -477,6 +483,7 @@
             '<div class="quality-display">' + qualityHtml + '</div>' +
             progressHtml +
             '<div class="sparkline-wrap" data-sparkline="' + esc(item.name) + '"></div>' +
+            (USER_ROLE >= 1 ? '<a class="chart-link" href="' + APP_URL + '?page=stock-chart&token=' + TOKEN + '&resource=' + encodeURIComponent(item.name) + '">📈 Voir graphique</a>' : '') +
             '</div>' +
             footerHtml +
             '</div>';

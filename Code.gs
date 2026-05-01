@@ -1691,7 +1691,7 @@ function getMaterialsCatalogue(token) {
   }
 }
 
-function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token) {
+function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token, cible) {
   try {
     const session = validateToken(token);
     if (!session || (session.role || 0) < 1) return { success: false, message: 'Accès refusé.' };
@@ -1699,14 +1699,14 @@ function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token) {
     let sheet = _getSheet('MATERIALS_CONFIG');
     if (!sheet) {
       sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('MATERIALS_CONFIG');
-      sheet.appendRow(['Name', 'Source', 'Seuil1', 'Seuil2', 'Seuil3']);
+      sheet.appendRow(['Name', 'Source', 'Seuil1', 'Seuil2', 'Seuil3', 'Cible']);
     }
     const nameLow = String(name).toLowerCase();
     if (sheet.getLastRow() > 1) {
       const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
       for (var i = 0; i < data.length; i++) {
         if (String(data[i][0]).toLowerCase() === nameLow) {
-          sheet.getRange(i + 2, 3, 1, 3).setValues([[Number(seuil1)||0, Number(seuil2)||0, Number(seuil3)||0]]);
+          sheet.getRange(i + 2, 3, 1, 4).setValues([[Number(seuil1)||0, Number(seuil2)||0, Number(seuil3)||0, Number(cible)||0]]);
           return { success: true };
         }
       }
@@ -1723,7 +1723,7 @@ function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token) {
         }
       }
     }
-    sheet.appendRow([String(name), source, Number(seuil1)||0, Number(seuil2)||0, Number(seuil3)||0]);
+    sheet.appendRow([String(name), source, Number(seuil1)||0, Number(seuil2)||0, Number(seuil3)||0, Number(cible)||0]);
     return { success: true };
   } catch(e) { return { success: false, message: String(e) }; }
 }
@@ -1954,11 +1954,12 @@ function doGet(e) {
 
   const p = pages[page] || pages['index'];
   const tpl = HtmlService.createTemplateFromFile(p.file);
-  tpl.appUrl       = appUrl;
-  tpl.vendeurToken = token;
-  tpl.userRole     = currentUserRole;
-  tpl.errorMsg     = '';
-  tpl.fromPage     = from;
+  tpl.appUrl        = appUrl;
+  tpl.vendeurToken  = token;
+  tpl.userRole      = currentUserRole;
+  tpl.errorMsg      = '';
+  tpl.fromPage      = from;
+  tpl.resourceParam = (e && e.parameter && e.parameter.resource) || '';
   return tpl.evaluate().setTitle(p.title);
 }
 
