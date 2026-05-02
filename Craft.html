@@ -668,7 +668,7 @@
                 var avail = stockSummary[r.resource.toLowerCase()] || 0;
                 var factor = unitFactors[r.resource.toLowerCase()] !== undefined ? unitFactors[r.resource.toLowerCase()] : CSCU_PER_SCU;
                 var ok = r.qty > 0 && avail >= r.qty * factor;
-                var qtyStr = r.qty > 0 ? ' ×' + fmtQty(r.qty) + ' SCU' : '';
+                var qtyStr = r.qty > 0 ? ' ×' + displayIngQty(r.resource, r.qty) : '';
                 return '<span class="recipe-tag ' + (ok ? 'ok' : 'nok') + '">' + esc(r.resource) + qtyStr + '</span>';
             }).join('');
             var mins = item.craftTime > 0 ? Math.round(item.craftTime / 60) : 0;
@@ -705,7 +705,7 @@
                 var factor = unitFactors[r.resource.toLowerCase()] !== undefined ? unitFactors[r.resource.toLowerCase()] : CSCU_PER_SCU;
                 var ok = avail >= r.qty * factor;
                 recipeHtml += '<div style="font-size:.85rem;color:' + (ok ? 'var(--sib-green)' : 'var(--sib-red)') + ';margin-bottom:.15rem">' +
-                    (ok ? '✓' : '✗') + ' ' + esc(r.resource) + ' — ' + fmtQty(r.qty) + ' SCU (dispo: ' + fmtQty(avail) + ')</div>';
+                    (ok ? '✓' : '✗') + ' ' + esc(r.resource) + ' — ' + displayIngQty(r.resource, r.qty) + ' (dispo: ' + fmtQty(avail) + ' ' + unitLabel(r.resource) + ')</div>';
             });
             recipeEl.innerHTML = recipeHtml;
             recipeEl.style.display = 'block';
@@ -796,11 +796,11 @@
             var avail = stockSummary[r.resource.toLowerCase()] || 0;
             var factor = unitFactors[r.resource.toLowerCase()] !== undefined ? unitFactors[r.resource.toLowerCase()] : CSCU_PER_SCU;
             var stockInfo = avail >= r.qty * factor
-                ? '<span class="ing-stock-ok">✓ ' + avail + ' dispo</span>'
-                : '<span class="ing-stock-nok">✗ ' + avail + ' dispo</span>';
+                ? '<span class="ing-stock-ok">✓ ' + fmtQty(avail) + ' ' + unitLabel(r.resource) + ' dispo</span>'
+                : '<span class="ing-stock-nok">✗ ' + fmtQty(avail) + ' ' + unitLabel(r.resource) + ' dispo</span>';
             return '<div class="ing-row">' +
                 '<span class="ing-name">' + esc(r.resource) + '</span>' +
-                '<span class="ing-qty-needed">×' + fmtQty(r.qty) + ' SCU</span>' +
+                '<span class="ing-qty-needed">×' + displayIngQty(r.resource, r.qty) + '</span>' +
                 stockInfo +
                 _buildQualDD(r.resource, 'best') +
                 '</div>';
@@ -1046,6 +1046,17 @@
         var n = parseFloat(q);
         if (isNaN(n) || n === 0) return '0';
         return parseFloat(n.toFixed(2)).toString();
+    }
+    // Converts a wiki recipe qty (in SCU) to display string in the storage unit (cSCU or unité)
+    function displayIngQty(resource, qty) {
+        var factor = unitFactors[resource.toLowerCase()] !== undefined ? unitFactors[resource.toLowerCase()] : CSCU_PER_SCU;
+        var converted = qty * factor;
+        var unit = factor === 1 ? 'unité' : 'cSCU';
+        return fmtQty(converted) + ' ' + unit;
+    }
+    function unitLabel(resource) {
+        var factor = unitFactors[resource.toLowerCase()] !== undefined ? unitFactors[resource.toLowerCase()] : CSCU_PER_SCU;
+        return factor === 1 ? 'unité' : 'cSCU';
     }
 
     document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
