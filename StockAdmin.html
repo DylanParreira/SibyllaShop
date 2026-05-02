@@ -480,7 +480,16 @@
     let editingStockId = null;
     let stockData = [];
 
-    window.onload = function() { loadStock(); loadLog(); };
+    window.onload = function() {
+        loadLog();
+        google.script.run
+            .withSuccessHandler(function(data) {
+                categoriesData = (data && data.categories) || [];
+                loadStock();
+            })
+            .withFailureHandler(function() { loadStock(); })
+            .getCategories(TOKEN);
+    };
 
     function showTab(name) {
         var tabs = ['stock','wiki-materials','log'];

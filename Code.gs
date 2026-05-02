@@ -628,12 +628,25 @@ function getStockLog(token) {
 function _getResourceUnitFactors() {
   const catUnitMap = _getCategoryUnitMap();
   const factors = {};
+  // Primary: MATERIALS_CONFIG col7 — the category set via Catalogue UI (authoritative)
+  const cfgSheet = _getSheet('MATERIALS_CONFIG');
+  if (cfgSheet && cfgSheet.getLastRow() > 1) {
+    cfgSheet.getRange(2, 1, cfgSheet.getLastRow() - 1, 7).getValues().forEach(function(r) {
+      if (!r[0]) return;
+      const cat = String(r[6] || '');
+      const unitType = catUnitMap[cat.toLowerCase()] || 'cSCU';
+      factors[String(r[0]).toLowerCase()] = unitType === 'unité' ? 1 : CSCU_PER_SCU;
+    });
+  }
+  // Fallback: STOCK col2 for items not listed in MATERIALS_CONFIG
   const stockSheet = _getSheet('STOCK');
   if (stockSheet && stockSheet.getLastRow() > 1) {
     stockSheet.getRange(2, 1, stockSheet.getLastRow() - 1, 3).getValues().forEach(function(r) {
       if (!r[0] || !r[2]) return;
+      const name = String(r[2]).toLowerCase();
+      if (factors[name] !== undefined) return;
       const unitType = catUnitMap[String(r[1] || '').toLowerCase()] || 'cSCU';
-      factors[String(r[2]).toLowerCase()] = unitType === 'unité' ? 1 : CSCU_PER_SCU;
+      factors[name] = unitType === 'unité' ? 1 : CSCU_PER_SCU;
     });
   }
   return factors;
