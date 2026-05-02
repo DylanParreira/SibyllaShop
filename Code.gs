@@ -349,6 +349,12 @@ function _fmtDate(v) {
   return String(v);
 }
 
+function _fmtDay(v) {
+  if (!v) return '';
+  if (v instanceof Date) return Utilities.formatDate(v, 'Europe/Paris', 'dd/MM/yyyy');
+  return String(v).slice(0, 10);
+}
+
 function _logStock(username, details) {
   try {
     const sheet = _getSheet('STOCK_LOG');
@@ -2196,7 +2202,7 @@ function _pruneStockHistory(keepDays) {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - keepDays);
     const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
     for (let i = data.length - 1; i >= 0; i--) {
-      const parts = String(data[i][0]).split('/');
+      const parts = _fmtDay(data[i][0]).split('/');
       const d = new Date(parts[2] + '-' + parts[1] + '-' + parts[0]);
       if (!isNaN(d.getTime()) && d < cutoff) sheet.deleteRow(i + 2);
     }
@@ -2232,12 +2238,13 @@ function getStockHistory(itemNames, days, token) {
       if (!r[0] || !r[1]) return;
       const name = String(r[1]);
       if (names.length > 0 && names.indexOf(name.toLowerCase()) === -1) return;
-      const parts = String(r[0]).split('/');
+      const dateStr = _fmtDay(r[0]);
+      const parts = dateStr.split('/');
       if (parts.length !== 3) return;
       const d = new Date(parts[2] + '-' + parts[1] + '-' + parts[0]);
       if (!isNaN(d.getTime()) && d >= cutoff) {
         if (!result[name]) result[name] = [];
-        result[name].push({ date: String(r[0]), val: Number(r[2]) || 0 });
+        result[name].push({ date: dateStr, val: Number(r[2]) || 0 });
       }
     });
     return { history: result };
