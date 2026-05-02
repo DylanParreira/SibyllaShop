@@ -624,6 +624,21 @@ function getStockLog(token) {
 // CRAFT_RECIPES: ID(0), CraftItemID(1), ResourceNom(2), QuantiteNecessaire(3)
 // ============================================
 
+// Returns {itemNameLower: factor} where factor=1 for 'unité' items, CSCU_PER_SCU for 'cSCU' items
+function _getResourceUnitFactors() {
+  const catUnitMap = _getCategoryUnitMap();
+  const factors = {};
+  const stockSheet = _getSheet('STOCK');
+  if (stockSheet && stockSheet.getLastRow() > 1) {
+    stockSheet.getRange(2, 1, stockSheet.getLastRow() - 1, 3).getValues().forEach(function(r) {
+      if (!r[0] || !r[2]) return;
+      const unitType = catUnitMap[String(r[1] || '').toLowerCase()] || 'cSCU';
+      factors[String(r[2]).toLowerCase()] = unitType === 'unité' ? 1 : CSCU_PER_SCU;
+    });
+  }
+  return factors;
+}
+
 function _buildStockMap() {
   const stockSheet = _getSheet('STOCK');
   const map = {};
@@ -692,6 +707,7 @@ function getCraftItemsWithStatus() {
     const wikiSheet = _getSheet('WIKI_BLUEPRINTS');
     if (!wikiSheet || wikiSheet.getLastRow() <= 1) return { items: [] };
     const stockMap = _buildStockMap();
+    const unitFactors = _getResourceUnitFactors();
     const data = wikiSheet.getRange(2, 1, wikiSheet.getLastRow() - 1, 10).getValues();
     const items = [];
     data.forEach(function(r) {
@@ -703,7 +719,8 @@ function getCraftItemsWithStatus() {
       });
       let craftable = recipe.length > 0;
       recipe.forEach(function(ing) {
-        if (ing.qty > 0 && (stockMap[ing.resource.toLowerCase()] || 0) < ing.qty * CSCU_PER_SCU) craftable = false;
+        const factor = unitFactors[ing.resource.toLowerCase()] !== undefined ? unitFactors[ing.resource.toLowerCase()] : CSCU_PER_SCU;
+        if (ing.qty > 0 && (stockMap[ing.resource.toLowerCase()] || 0) < ing.qty * factor) craftable = false;
       });
       items.push({
         id: uuid,
@@ -1012,6 +1029,7 @@ function getCraftRequests(token) {
     if (!sheet || sheet.getLastRow() <= 1) return { requests: [] };
     const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 19).getValues();
     const stockMap = _buildStockMap();
+    const unitFactors = _getResourceUnitFactors();
     const requests = data.filter(function(r) { return r[0]; }).map(function(r) {
       const customRecipe = _safeParse(r[17], null);
       const quantite = Number(r[6]) || 1;
@@ -1019,7 +1037,8 @@ function getCraftRequests(token) {
       let feasible = null;
       if (customRecipe && Array.isArray(customRecipe)) {
         feasible = customRecipe.every(function(ing) {
-          return (stockMap[String(ing.resource).toLowerCase()] || 0) >= (Number(ing.qty) || 0) * quantite * CSCU_PER_SCU;
+          const factor = unitFactors[String(ing.resource).toLowerCase()] !== undefined ? unitFactors[String(ing.resource).toLowerCase()] : CSCU_PER_SCU;
+          return (stockMap[String(ing.resource).toLowerCase()] || 0) >= (Number(ing.qty) || 0) * quantite * factor;
         });
       }
       return {
@@ -1109,6 +1128,7 @@ function _updateStockReservation(craftItemId, quantite, direction, prioriteQuali
     const stockSheet = _getSheet('STOCK');
     if (!stockSheet) return allDetails;
     const sd = stockSheet.getDataRange().getValues();
+    const unitFactors = _getResourceUnitFactors();
 
     // Build recipe list
     let recipes = [];
@@ -1129,7 +1149,8 @@ function _updateStockReservation(craftItemId, quantite, direction, prioriteQuali
 
     recipes.forEach(function(recipe) {
       const resName = String(recipe.resource);
-      let remaining = Math.round((Number(recipe.qty) || 0) * quantite * CSCU_PER_SCU * 10000) / 10000;
+      const factor = unitFactors[resName.toLowerCase()] !== undefined ? unitFactors[resName.toLowerCase()] : CSCU_PER_SCU;
+      let remaining = Math.round((Number(recipe.qty) || 0) * quantite * factor * 10000) / 10000;
 
       // Determine sort priority and optional minimum quality for this resource
       let localPriority = prioriteQualite || 'DESC';
