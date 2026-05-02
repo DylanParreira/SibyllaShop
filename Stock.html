@@ -236,7 +236,7 @@
     <div class="header-left">
         <img class="header-logo" src="https://raw.githubusercontent.com/DylanParreira/SibyllaShop/main/Logo-2000-copie-2-300x300.webp" alt="Sibylla">
         <div class="header-sep"></div>
-        <div class="header-title">Stock centrale</div>
+        <div class="header-title">Stock central</div>
     </div>
     <div class="header-nav">
         <span class="nav-btn nav-active">📦 Stock</span>
@@ -463,7 +463,7 @@
             var pCls = pct < 30 ? 'p-crit' : pct < 60 ? 'p-low' : pct < 90 ? 'p-med' : 'p-good';
             progressHtml = '<div class="progress-wrap">' +
                 '<div class="progress-labels">' +
-                '<span class="progress-current">' + item.totalAvail + ' / ' + item.cible + ' cSCU</span>' +
+                '<span class="progress-current">' + item.totalAvail + ' / ' + item.cible + ' ' + (item.unite || 'cSCU') + '</span>' +
                 '<span class="progress-target">' + pct + '%</span>' +
                 '</div>' +
                 '<div class="progress-bar"><div class="progress-fill ' + pCls + '" style="width:' + pct + '%"></div></div>' +

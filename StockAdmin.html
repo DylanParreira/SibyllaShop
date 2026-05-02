@@ -96,6 +96,12 @@
         .actif-on  { color:var(--sib-green);  font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.8rem; }
         .actif-off { color:var(--sib-orange); font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.8rem; }
 
+        /* Category sections */
+        .cat-section { margin-bottom:2rem; }
+        .cat-section-title { font-family:'Rajdhani',sans-serif; font-size:.92rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--sib-accent2); padding:.4rem 0 .5rem 0; margin-bottom:.6rem; border-bottom:1px solid rgba(77,163,255,.18); display:flex; align-items:center; gap:.55rem; }
+        .cat-section-title::before { content:''; display:block; width:3px; height:1em; background:var(--sib-accent2); border-radius:2px; }
+        .cat-count { font-size:.72rem; font-weight:700; letter-spacing:.06em; color:var(--sib-muted); background:rgba(77,163,255,.1); border:1px solid rgba(77,163,255,.2); border-radius:5px; padding:.1rem .45rem; }
+
         /* LOG */
         .log-table { width:100%; border-collapse:collapse; min-width:600px; }
         .log-table td { padding:.75rem 1rem; font-size:.85rem; vertical-align:top; border-bottom:1px solid var(--sib-border); }
@@ -194,6 +200,24 @@
         .wm-empty { color:var(--sib-muted); padding:2.5rem; text-align:center; }
         .wm-count { font-size:.8rem; color:var(--sib-muted); margin-bottom:.6rem; }
 
+        /* Category management panel */
+        .cat-mgmt { background:var(--sib-panel); border:1px solid rgba(77,163,255,.2); border-radius:12px; margin-bottom:1.2rem; overflow:hidden; }
+        .cat-mgmt-header { display:flex; align-items:center; justify-content:space-between; padding:.7rem 1.1rem; cursor:pointer; user-select:none; }
+        .cat-mgmt-title { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.85rem; letter-spacing:.1em; text-transform:uppercase; color:var(--sib-accent2); display:flex; align-items:center; gap:.5rem; }
+        .cat-mgmt-body { padding:1rem 1.1rem; border-top:1px solid rgba(77,163,255,.15); display:none; }
+        .cat-mgmt-body.open { display:block; }
+        .cat-list { display:flex; gap:.45rem; flex-wrap:wrap; margin-bottom:.8rem; min-height:1.5rem; }
+        .cat-chip { display:inline-flex; align-items:center; gap:.35rem; background:rgba(255,255,255,.04); border:1px solid var(--sib-border); border-radius:20px; padding:.25rem .75rem; }
+        .cat-chip-name { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:.82rem; color:var(--sib-text); }
+        .cat-chip-unit { font-size:.65rem; font-weight:700; letter-spacing:.05em; padding:.08rem .35rem; border-radius:4px; }
+        .cat-chip-unit.cscu { background:rgba(64,224,255,.1); color:var(--sib-accent1); border:1px solid rgba(64,224,255,.2); }
+        .cat-chip-unit.unite { background:rgba(250,218,125,.1); color:var(--sib-gold); border:1px solid rgba(250,218,125,.2); }
+        .cat-chip-del { background:none; border:none; color:rgba(255,107,107,.4); cursor:pointer; font-size:.8rem; padding:0; line-height:1; }
+        .cat-chip-del:hover { color:var(--sib-red); }
+        .cat-add-row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+        .cat-add-row .form-input { flex:1; min-width:120px; padding:.55rem .9rem; }
+        .cat-add-row .form-select { min-width:160px; padding:.55rem .9rem; }
+
         @media(max-width:700px){ .modal-grid{grid-template-columns:1fr;} .seuils-grid{grid-template-columns:1fr;} .page-wrapper{padding:1rem;} header{padding:0 1rem;} }
     </style>
 </head>
@@ -237,25 +261,7 @@
                 <button class="btn-csv btn-import-csv" onclick="openImportModal()">⬆ Importer CSV</button>
             </div>
         </div>
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Catégorie</th>
-                        <th>Item</th>
-                        <th>Qualité</th>
-                        <th>Qté (cSCU)</th>
-                        <th>Réservé</th>
-                        <th>Seuil 1</th>
-                        <th>Seuil 2</th>
-                        <th>Seuil 3</th>
-                        <th>Actif</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="stockTbody"><tr class="empty-row"><td colspan="10">Chargement…</td></tr></tbody>
-            </table>
-        </div>
+        <div id="stockContainer"><div class="table-wrap"><table><tbody><tr class="empty-row"><td colspan="9">Chargement…</td></tr></tbody></table></div></div>
     </div>
 
     <!-- CATALOGUE MATÉRIAUX -->
@@ -263,6 +269,24 @@
         <div class="section-header">
             <div class="section-title">Catalogue Matériaux</div>
             <button class="btn-add" onclick="openAddMaterialModal()">+ Ajouter</button>
+        </div>
+        <!-- Gestion des catégories -->
+        <div class="cat-mgmt" id="catMgmt">
+            <div class="cat-mgmt-header" onclick="toggleCatMgmt()">
+                <span class="cat-mgmt-title">⚙ Gérer les catégories</span>
+                <span id="catMgmtToggle" style="color:var(--sib-muted);font-size:.8rem">▾</span>
+            </div>
+            <div class="cat-mgmt-body" id="catMgmtBody">
+                <div class="cat-list" id="catList"><span style="color:var(--sib-muted);font-size:.8rem">Chargement…</span></div>
+                <div class="cat-add-row">
+                    <input class="form-input" type="text" id="newCatName" placeholder="Nom de la catégorie" onkeydown="if(event.key==='Enter')addCategory()">
+                    <select class="form-select" id="newCatUnit">
+                        <option value="cSCU">cSCU — minerais, gaz...</option>
+                        <option value="unité">Unité — gemmes, composants...</option>
+                    </select>
+                    <button class="btn-add" onclick="addCategory()" style="white-space:nowrap">+ Créer</button>
+                </div>
+            </div>
         </div>
         <div class="wm-toolbar">
             <div class="wm-sync-info" id="wmSyncInfo">Dérivé automatiquement des blueprints actifs.</div>
@@ -331,9 +355,17 @@
         </div>
         <div class="modal-section-title" style="margin-top:1rem">Objectif de stock</div>
         <div class="form-group">
-            <label class="form-label">Cible (cSCU) <span style="color:var(--sib-green)">◎</span></label>
+            <label class="form-label">Cible <span style="color:var(--sib-green)">◎</span></label>
             <input class="form-input" type="number" id="msCible" min="0" placeholder="0">
             <div class="form-hint">Affiché comme barre de progression sur les cartes membres</div>
+        </div>
+        <div class="modal-section-title" style="margin-top:1rem">Catégorie</div>
+        <div class="form-group">
+            <label class="form-label">Catégorie du matériau</label>
+            <select class="form-select" id="msCategorie">
+                <option value="">— Sans catégorie —</option>
+            </select>
+            <div class="form-hint">Détermine l'unité affichée (cSCU ou unité)</div>
         </div>
         <div style="display:flex;gap:.7rem;margin-top:1.2rem">
             <button class="btn-add" id="matSeuilsSaveBtn" onclick="saveMatSeuils()" style="flex:1">Enregistrer</button>
@@ -350,6 +382,12 @@
         <div class="form-group" style="margin-top:1.2rem">
             <label class="form-label">Nom du matériau</label>
             <input class="form-input" type="text" id="newMatName" placeholder="Ex : Dolivine" onkeydown="if(event.key==='Enter')confirmAddMaterial()">
+        </div>
+        <div class="form-group" style="margin-top:.8rem">
+            <label class="form-label">Catégorie</label>
+            <select class="form-select" id="newMatCategorie">
+                <option value="">— Sans catégorie —</option>
+            </select>
         </div>
         <div style="display:flex;gap:.7rem;margin-top:1.2rem">
             <button class="btn-add" id="addMatBtn" onclick="confirmAddMaterial()" style="flex:1">Ajouter</button>
@@ -476,22 +514,25 @@
     }
 
     function renderStockTable() {
-        var tbody = document.getElementById('stockTbody');
+        var container = document.getElementById('stockContainer');
         if (stockData.length === 0) {
-            tbody.innerHTML='<tr class="empty-row"><td colspan="10">Aucune entrée de stock.</td></tr>';
+            container.innerHTML = '<div class="table-wrap"><table><tbody><tr class="empty-row"><td colspan="9">Aucune entrée de stock.</td></tr></tbody></table></div>';
             return;
         }
-        // Sort: 0-qty rows first, then by alert level desc, then alphabetically
+        // Sort alphabetically: category then item name (admin view — no qty-based sorting)
         var sorted = stockData.slice().sort(function(a, b) {
-            var aEmpty = (a.quantite || 0) <= 0, bEmpty = (b.quantite || 0) <= 0;
-            if (aEmpty && !bEmpty) return -1;
-            if (!aEmpty && bEmpty) return 1;
-            var aAlert = getSeuilStatus(a), bAlert = getSeuilStatus(b);
-            var lvl = {'s3':3,'s2':2,'s1':1,'':0};
-            if (lvl[bAlert] !== lvl[aAlert]) return lvl[bAlert] - lvl[aAlert];
+            var catCmp = (a.categorie || '').localeCompare(b.categorie || '', 'fr');
+            if (catCmp !== 0) return catCmp;
             return (a.item || '').localeCompare(b.item || '', 'fr');
         });
-        tbody.innerHTML = sorted.map(function(r) {
+        // Group by category
+        var catMap = {}, catOrder = [];
+        sorted.forEach(function(r) {
+            var cat = (r.categorie || 'Sans catégorie').trim();
+            if (!catMap[cat]) { catMap[cat] = []; catOrder.push(cat); }
+            catMap[cat].push(r);
+        });
+        function buildRow(r) {
             var isEmpty = (r.quantite || 0) <= 0;
             var ql = getQualiteLabel(r.qualite);
             var alert = isEmpty ? 's3' : getSeuilStatus(r);
@@ -506,13 +547,10 @@
             var seuil3Html = r.seuil3 > 0 ? '<span class="seuil-badge s3">≤' + r.seuil3 + '</span>' : '<span class="seuil-none">–</span>';
             var actifHtml  = r.actif ? '<span class="actif-on">✓ Actif</span>' : '<span class="actif-off">✗ Désactivé</span>';
             var toggleCls  = r.actif ? 'btn-toggle-off' : 'btn-toggle-on';
-            // qty > 0 → Reset (sets to 0/500 and keeps row visible)
-            // qty = 0 → Supprimer (actually removes the row)
             var actionBtn = isEmpty
                 ? '<button class="btn-action btn-delete" onclick="deleteStock(\'' + esc(r.id) + '\')" title="Supprimer définitivement">Supprimer</button>'
                 : '<button class="btn-action btn-toggle-off" onclick="deleteStock(\'' + esc(r.id) + '\')" title="Remettre à zéro (conserve la ligne visible)">↺ Reset</button>';
             return '<tr' + (rowCls ? ' class="'+rowCls+'"' : '') + '>' +
-                '<td>' + esc(r.categorie) + '</td>' +
                 '<td><strong>' + itemLabel + '</strong></td>' +
                 '<td><span style="color:' + ql.color + ';font-weight:700">' + ql.label + '</span></td>' +
                 '<td' + qtyCls + '>' + r.quantite + '</td>' +
@@ -526,6 +564,23 @@
                 '<button class="btn-action ' + toggleCls + '" onclick="toggleActif(\'' + esc(r.id) + '\',' + !r.actif + ')">' + (r.actif?'Désactiver':'Activer') + '</button>' +
                 actionBtn +
                 '</div></td></tr>';
+        }
+        // Build unit map from categoriesData for column headers
+        var catUnitMap = {};
+        categoriesData.forEach(function(c){ catUnitMap[c.name.toLowerCase()] = c.unitType; });
+        container.innerHTML = catOrder.map(function(cat) {
+            var rows = catMap[cat];
+            var unitLabel = catUnitMap[cat.toLowerCase()] || 'cSCU';
+            return '<div class="cat-section">' +
+                '<div class="cat-section-title">' + esc(cat) + ' <span class="cat-count">' + rows.length + '</span>' +
+                '<span style="font-size:.7rem;font-weight:700;color:var(--sib-muted);letter-spacing:.05em;margin-left:.4rem;text-transform:none">' + esc(unitLabel) + '</span></div>' +
+                '<div class="table-wrap"><table>' +
+                '<thead><tr>' +
+                '<th>Item</th><th>Qualité</th><th>Qté ('+esc(unitLabel)+')</th><th>Réservé</th>' +
+                '<th>Seuil 1</th><th>Seuil 2</th><th>Seuil 3</th><th>Actif</th><th>Actions</th>' +
+                '</tr></thead>' +
+                '<tbody>' + rows.map(buildRow).join('') + '</tbody>' +
+                '</table></div></div>';
         }).join('');
     }
 
@@ -766,6 +821,7 @@
 
     // ===== CATALOGUE MATÉRIAUX =====
     var catalogueData = [];
+    var categoriesData = [];
     var catalogueFilter = '';
 
     function loadCatalogue() {
@@ -776,16 +832,100 @@
                 catalogueData = data.items || [];
                 var bpCount = catalogueData.filter(function(m){ return m.source==='blueprint'; }).length;
                 var manCount = catalogueData.filter(function(m){ return m.source==='manual'; }).length;
-                if (data.lastSync) document.getElementById('wmSyncInfo').textContent =
-                    'Dérivé des blueprints — ' + bpCount + ' blueprint' + (bpCount>1?'s':'') + ', ' + manCount + ' manuel' + (manCount>1?'s':'') + (data.lastSync ? ' · sync ' + data.lastSync : '');
-                var html = '<button class="wm-type-btn active" onclick="setCatalogueFilter(\'\',this)">Tous ('+catalogueData.length+')</button>' +
-                    '<button class="wm-type-btn" onclick="setCatalogueFilter(\'blueprint\',this)">Blueprint ('+bpCount+')</button>' +
-                    '<button class="wm-type-btn" onclick="setCatalogueFilter(\'manual\',this)">Manuel ('+manCount+')</button>';
-                document.getElementById('wmTypebtns').innerHTML = html;
-                renderCatalogue();
+                document.getElementById('wmSyncInfo').textContent =
+                    bpCount + ' blueprint' + (bpCount>1?'s':'') + ', ' + manCount + ' manuel' + (manCount>1?'s':'') + (data.lastSync ? ' · sync ' + data.lastSync : '');
+                loadCategories(true);
             })
             .withFailureHandler(function(){ document.getElementById('wmGrid').innerHTML='<div class="wm-empty">Erreur de chargement.</div>'; })
             .getMaterialsCatalogue(TOKEN);
+    }
+
+    function loadCategories(andRender) {
+        google.script.run
+            .withSuccessHandler(function(data) {
+                categoriesData = (data && data.categories) || [];
+                renderCategoryMgmt();
+                buildCatalogueFilterBtns();
+                if (andRender) renderCatalogue();
+            })
+            .withFailureHandler(function(){ if (andRender) renderCatalogue(); })
+            .getCategories(TOKEN);
+    }
+
+    // ===== GESTION CATÉGORIES =====
+    function toggleCatMgmt() {
+        document.getElementById('catMgmtBody').classList.toggle('open');
+        document.getElementById('catMgmtToggle').textContent =
+            document.getElementById('catMgmtBody').classList.contains('open') ? '▴' : '▾';
+    }
+
+    function renderCategoryMgmt() {
+        var list = document.getElementById('catList');
+        if (categoriesData.length === 0) {
+            list.innerHTML = '<span style="color:var(--sib-muted);font-size:.8rem">Aucune catégorie. Créez-en une ci-dessous.</span>';
+            return;
+        }
+        list.innerHTML = categoriesData.map(function(c) {
+            var unitCls = c.unitType === 'unité' ? 'unite' : 'cscu';
+            return '<span class="cat-chip">' +
+                '<span class="cat-chip-name">'+esc(c.name)+'</span>' +
+                '<span class="cat-chip-unit '+unitCls+'">'+esc(c.unitType)+'</span>' +
+                '<button class="cat-chip-del" onclick="deleteCategory(\''+esc(c.name)+'\')" title="Supprimer">✕</button>' +
+                '</span>';
+        }).join('');
+    }
+
+    function populateCatDropdown(selectId, selected) {
+        var sel = document.getElementById(selectId);
+        var opts = '<option value="">— Sans catégorie —</option>';
+        categoriesData.forEach(function(c) {
+            opts += '<option value="'+esc(c.name)+'"'+(c.name === selected ? ' selected' : '')+'>'+esc(c.name)+' ('+esc(c.unitType)+')</option>';
+        });
+        sel.innerHTML = opts;
+    }
+
+    function addCategory() {
+        var name = (document.getElementById('newCatName').value || '').trim();
+        var unit = document.getElementById('newCatUnit').value || 'cSCU';
+        if (!name) { showToast('Nom requis.', 'error'); return; }
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) {
+                    document.getElementById('newCatName').value = '';
+                    showToast('Catégorie créée.', 'success');
+                    loadCategories(false);
+                } else showToast(r.message || 'Erreur.', 'error');
+            })
+            .withFailureHandler(function(){ showToast('Erreur serveur.', 'error'); })
+            .saveCategory(name, unit, TOKEN);
+    }
+
+    function deleteCategory(name) {
+        if (!confirm('Supprimer la catégorie "' + name + '" ?\n(Les matériaux restent, leur catégorie sera effacée)')) return;
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) { showToast('Catégorie supprimée.', 'success'); loadCategories(false); }
+                else showToast(r.message || 'Erreur.', 'error');
+            })
+            .withFailureHandler(function(){ showToast('Erreur serveur.', 'error'); })
+            .deleteCategory(name, TOKEN);
+    }
+
+    // ===== FILTRES ET RENDU DU CATALOGUE =====
+    function buildCatalogueFilterBtns() {
+        var catCounts = {};
+        catalogueData.forEach(function(m) {
+            var cat = m.categorie || '';
+            catCounts[cat] = (catCounts[cat] || 0) + 1;
+        });
+        var html = '<button class="wm-type-btn active" onclick="setCatalogueFilter(\'\',this)">Tous (' + catalogueData.length + ')</button>';
+        categoriesData.forEach(function(c) {
+            var count = catCounts[c.name] || 0;
+            if (count > 0) html += '<button class="wm-type-btn" onclick="setCatalogueFilter(\'cat:'+esc(c.name)+'\',this)">'+esc(c.name)+' ('+count+')</button>';
+        });
+        var noCatCount = catCounts[''] || 0;
+        if (noCatCount > 0) html += '<button class="wm-type-btn" onclick="setCatalogueFilter(\'cat:\',this)">Sans catégorie ('+noCatCount+')</button>';
+        document.getElementById('wmTypebtns').innerHTML = html;
     }
 
     function setCatalogueFilter(f, btn) {
@@ -798,16 +938,30 @@
     function renderCatalogue() {
         var search = (document.getElementById('wmSearch').value || '').toLowerCase().trim();
         var filtered = catalogueData.filter(function(m) {
-            if (catalogueFilter && m.source !== catalogueFilter) return false;
+            if (catalogueFilter && catalogueFilter.startsWith('cat:')) {
+                if ((m.categorie || '') !== catalogueFilter.slice(4)) return false;
+            }
             if (search && m.name.toLowerCase().indexOf(search) === -1) return false;
             return true;
         });
         document.getElementById('wmCount').textContent = filtered.length + ' matériau' + (filtered.length>1?'x':'') + ' affiché' + (filtered.length>1?'s':'');
         if (filtered.length === 0) { document.getElementById('wmGrid').innerHTML = '<div class="wm-empty">Aucun matériau trouvé.</div>'; return; }
-        var html = filtered.map(function(m) {
+        var catUnitMap = {};
+        categoriesData.forEach(function(c){ catUnitMap[c.name] = c.unitType; });
+        var html = filtered.map(function(m, idx) {
             var isBp = m.source === 'blueprint';
             var s1 = m.seuil1 > 0, s2 = m.seuil2 > 0, s3 = m.seuil3 > 0;
             var hasCible = m.cible > 0;
+            var catName = m.categorie || '';
+            var unitType = catUnitMap[catName] || '';
+            var catBadge = catName
+                ? '<span class="wm-badge" style="background:rgba(77,163,255,.12);color:var(--sib-accent2);border:1px solid rgba(77,163,255,.25)">'+esc(catName)+'</span>'
+                : '<span class="wm-badge" style="color:rgba(159,182,215,.35);border:1px solid rgba(255,255,255,.06)">—</span>';
+            var unitBadge = unitType
+                ? (unitType === 'unité'
+                    ? '<span class="wm-badge" style="background:rgba(250,218,125,.1);color:var(--sib-gold);border:1px solid rgba(250,218,125,.2)">unité</span>'
+                    : '<span class="wm-badge" style="background:rgba(64,224,255,.08);color:var(--sib-accent1);border:1px solid rgba(64,224,255,.15)">cSCU</span>')
+                : '';
             var seuilsHtml =
                 '<div class="wm-seuils">' +
                 '<div class="wm-seuil"><span class="wm-seuil-lbl">Alerte</span><span class="wm-seuil-val '+(s1?'set':'unset')+'">'+( s1 ? '≤'+m.seuil1 : '—')+'</span></div>' +
@@ -816,12 +970,15 @@
                 '<div class="wm-seuil"><span class="wm-seuil-lbl" style="color:var(--sib-green)">Cible</span><span class="wm-seuil-val '+(hasCible?'set':'unset')+'" style="'+(hasCible?'color:var(--sib-green)':'')+'">'+( hasCible ? m.cible : '—')+'</span></div>' +
                 '</div>';
             var delBtn = isBp ? '' : '<button class="btn-cat-del" onclick="deleteCatMaterial(\''+esc(m.name)+'\')">✕</button>';
+            // Use filtered index mapped to catalogueData index for safe lookup
+            var catalogueIdx = catalogueData.indexOf(m);
             return '<div class="wm-card '+(isBp?'bp':'manual')+'">' +
-                '<div class="wm-card-header"><span class="wm-card-name">'+esc(m.name)+'</span><span class="wm-badge '+(isBp?'bp':'manual')+'">'+(isBp?'Blueprint':'Manuel')+'</span></div>' +
+                '<div class="wm-card-header"><span class="wm-card-name">'+esc(m.name)+'</span><span class="wm-badge '+(isBp?'bp':'manual')+'">'+(isBp?'BP':'Manuel')+'</span></div>' +
+                '<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.3rem">'+catBadge+unitBadge+'</div>' +
                 seuilsHtml +
                 '<div class="wm-card-footer">' +
-                '<button class="btn-cat-stock" onclick="addToStockFromCatalogue(\''+esc(m.name)+'\','+m.seuil1+','+m.seuil2+','+m.seuil3+')">+ Stock</button>' +
-                '<button class="btn-cat-seuils" onclick="openMatSeuils(\''+esc(m.name)+'\','+m.seuil1+','+m.seuil2+','+m.seuil3+','+(m.cible||0)+')">⚙ Seuils</button>' +
+                '<button class="btn-cat-stock" onclick="addToStockFromCatalogue('+catalogueIdx+')">+ Stock</button>' +
+                '<button class="btn-cat-seuils" onclick="openMatSeuils('+catalogueIdx+')">⚙ Seuils</button>' +
                 delBtn +
                 '</div>' +
                 '</div>';
@@ -830,30 +987,35 @@
     }
 
     // — Ajouter au stock depuis le catalogue
-    function addToStockFromCatalogue(name, s1, s2, s3) {
+    function addToStockFromCatalogue(idx) {
+        var m = catalogueData[idx];
+        if (!m) return;
         editingStockId = null;
-        document.getElementById('stockModalTitle').textContent = 'Ajouter au stock — ' + name;
-        document.getElementById('sCategorie').value = 'Matériaux';
-        document.getElementById('sItem').value      = name;
+        document.getElementById('stockModalTitle').textContent = 'Ajouter au stock — ' + m.name;
+        document.getElementById('sCategorie').value = m.categorie || '';
+        document.getElementById('sItem').value      = m.name;
         document.getElementById('sQty').value       = '';
         document.getElementById('sQualite').value   = '500';
         document.getElementById('sImageUrl').value  = '';
-        document.getElementById('sSeuil1').value    = s1 || '';
-        document.getElementById('sSeuil2').value    = s2 || '';
-        document.getElementById('sSeuil3').value    = s3 || '';
+        document.getElementById('sSeuil1').value    = m.seuil1 || '';
+        document.getElementById('sSeuil2').value    = m.seuil2 || '';
+        document.getElementById('sSeuil3').value    = m.seuil3 || '';
         document.getElementById('sActif').checked   = true;
         document.getElementById('stockModal').classList.add('active');
     }
 
     // — Seuils matériau
     var matSeuilsName = '';
-    function openMatSeuils(name, s1, s2, s3, cible) {
-        matSeuilsName = name;
-        document.getElementById('matSeuilsTitle').textContent = 'Seuils — ' + name;
-        document.getElementById('msSeuil1').value = s1 || '';
-        document.getElementById('msSeuil2').value = s2 || '';
-        document.getElementById('msSeuil3').value = s3 || '';
-        document.getElementById('msCible').value  = cible || '';
+    function openMatSeuils(idx) {
+        var m = catalogueData[idx];
+        if (!m) return;
+        matSeuilsName = m.name;
+        document.getElementById('matSeuilsTitle').textContent = 'Seuils — ' + m.name;
+        document.getElementById('msSeuil1').value = m.seuil1 || '';
+        document.getElementById('msSeuil2').value = m.seuil2 || '';
+        document.getElementById('msSeuil3').value = m.seuil3 || '';
+        document.getElementById('msCible').value  = m.cible || '';
+        populateCatDropdown('msCategorie', m.categorie || '');
         document.getElementById('matSeuilsModal').classList.add('active');
     }
     function closeMatSeuilsModal() { document.getElementById('matSeuilsModal').classList.remove('active'); }
@@ -866,6 +1028,7 @@
         var s2    = parseInt(document.getElementById('msSeuil2').value)||0;
         var s3    = parseInt(document.getElementById('msSeuil3').value)||0;
         var cible = parseInt(document.getElementById('msCible').value)||0;
+        var cat   = document.getElementById('msCategorie').value || '';
         google.script.run
             .withSuccessHandler(function(r) {
                 btn.disabled = false; btn.textContent = 'Enregistrer';
@@ -873,12 +1036,13 @@
                 else showToast(r.message || 'Erreur.', 'error');
             })
             .withFailureHandler(function(){ btn.disabled=false; btn.textContent='Enregistrer'; showToast('Erreur serveur.','error'); })
-            .saveMaterialSeuils(matSeuilsName, s1, s2, s3, TOKEN, cible);
+            .saveMaterialSeuils(matSeuilsName, s1, s2, s3, TOKEN, cible, cat);
     }
 
     // — Ajout matériau manuel
     function openAddMaterialModal() {
         document.getElementById('newMatName').value = '';
+        populateCatDropdown('newMatCategorie', '');
         document.getElementById('addMatModal').classList.add('active');
         setTimeout(function(){ document.getElementById('newMatName').focus(); }, 100);
     }
@@ -888,6 +1052,7 @@
     function confirmAddMaterial() {
         var name = document.getElementById('newMatName').value.trim();
         if (!name) { showToast('Nom requis.', 'error'); return; }
+        var cat = document.getElementById('newMatCategorie').value || '';
         var btn = document.getElementById('addMatBtn');
         btn.disabled = true; btn.textContent = '⏳';
         google.script.run
@@ -897,7 +1062,7 @@
                 else showToast(r.message || 'Erreur.', 'error');
             })
             .withFailureHandler(function(){ btn.disabled=false; btn.textContent='Ajouter'; showToast('Erreur serveur.','error'); })
-            .addManualMaterial(name, TOKEN);
+            .addManualMaterial(name, TOKEN, cat);
     }
 
     // — Suppression matériau manuel

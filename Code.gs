@@ -389,12 +389,13 @@ function getStock() {
     if (!sheet || sheet.getLastRow() <= 1) return { categories: [] };
     const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 12).getValues();
 
-    // Cible (objectif) par item depuis MATERIALS_CONFIG col 6
+    // Cible + catégorie par item depuis MATERIALS_CONFIG
     const cibleMap = {};
+    const catUnitMap = _getCategoryUnitMap();
     try {
       const cfgSheet = _getSheet('MATERIALS_CONFIG');
       if (cfgSheet && cfgSheet.getLastRow() > 1) {
-        cfgSheet.getRange(2, 1, cfgSheet.getLastRow() - 1, 6).getValues().forEach(function(r) {
+        cfgSheet.getRange(2, 1, cfgSheet.getLastRow() - 1, 7).getValues().forEach(function(r) {
           if (r[0]) cibleMap[String(r[0]).toLowerCase()] = Number(r[5]) || 0;
         });
       }
@@ -409,17 +410,19 @@ function getStock() {
       const seuil1 = Number(row[8]) || 0;
       const seuil2 = Number(row[9]) || 0;
       const seuil3 = Number(row[10]) || 0;
+      const unite  = catUnitMap[cat.toLowerCase()] || 'cSCU';
 
       if (!catMap[cat]) catMap[cat] = {};
       if (!catMap[cat][name]) {
         catMap[cat][name] = {
           name: name, imageUrl: String(row[6] || ''),
-          actif: actif, seuil1: seuil1, seuil2: seuil2, seuil3: seuil3, entries: []
+          actif: actif, seuil1: seuil1, seuil2: seuil2, seuil3: seuil3,
+          unite: unite, entries: []
         };
       }
       catMap[cat][name].entries.push({
         id: String(row[0]), quantite: Number(row[3]) || 0,
-        qualite: Number(row[4]) || 0, unite: String(row[5] || 'unité'),
+        qualite: Number(row[4]) || 0, unite: unite,
         reserve: Number(row[7]) || 0
       });
       // Accumulate thresholds (use max across all entries of same item)
@@ -457,6 +460,7 @@ function getStock() {
           alertLevel: alertLevel, isEmpty: totalAvail <= 0,
           seuil1: item.seuil1, seuil2: item.seuil2, seuil3: item.seuil3,
           cible: cibleMap[item.name.toLowerCase()] || 0,
+          unite: item.unite,
           entries: item.entries
         };
       });
@@ -484,19 +488,22 @@ function getStockAdmin(token) {
     if (!sheet || sheet.getLastRow() <= 1) return { items: [], log: [] };
     const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 12).getValues();
     const adminCibleMap = {};
+    const catUnitMap = _getCategoryUnitMap();
     try {
       const cfgSheet = _getSheet('MATERIALS_CONFIG');
       if (cfgSheet && cfgSheet.getLastRow() > 1) {
-        cfgSheet.getRange(2, 1, cfgSheet.getLastRow() - 1, 6).getValues().forEach(function(r) {
+        cfgSheet.getRange(2, 1, cfgSheet.getLastRow() - 1, 7).getValues().forEach(function(r) {
           if (r[0]) adminCibleMap[String(r[0]).toLowerCase()] = Number(r[5]) || 0;
         });
       }
     } catch(e) {}
     const items = data.filter(function(r) { return r[0]; }).map(function(r) {
+      const cat = String(r[1] || '');
       return {
-        id: String(r[0]), categorie: String(r[1] || ''), item: String(r[2] || ''),
+        id: String(r[0]), categorie: cat, item: String(r[2] || ''),
         quantite: Number(r[3]) || 0, qualite: Number(r[4]) || 0,
-        unite: String(r[5] || 'unité'), imageUrl: String(r[6] || ''),
+        unite: catUnitMap[cat.toLowerCase()] || 'cSCU',
+        imageUrl: String(r[6] || ''),
         reserve: Number(r[7]) || 0,
         seuil1: Number(r[8]) || 0, seuil2: Number(r[9]) || 0, seuil3: Number(r[10]) || 0,
         actif: _isActif(r[11]),
@@ -1663,11 +1670,11 @@ function getMaterialsCatalogue(token) {
     const configSheet = _getSheet('MATERIALS_CONFIG');
     const configs = {};
     if (configSheet && configSheet.getLastRow() > 1) {
-      configSheet.getRange(2, 1, configSheet.getLastRow() - 1, 6).getValues().forEach(function(r) {
+      configSheet.getRange(2, 1, configSheet.getLastRow() - 1, 7).getValues().forEach(function(r) {
         if (r[0]) configs[String(r[0]).toLowerCase()] = {
           name: String(r[0]), source: String(r[1] || 'manual'),
           seuil1: Number(r[2]) || 0, seuil2: Number(r[3]) || 0, seuil3: Number(r[4]) || 0,
-          cible: Number(r[5]) || 0
+          cible: Number(r[5]) || 0, categorie: String(r[6] || '')
         };
       });
     }
@@ -1678,14 +1685,15 @@ function getMaterialsCatalogue(token) {
       const cfg = configs[key] || {};
       items.push({ name: bpNames[key], source: 'blueprint',
         seuil1: cfg.seuil1 || 0, seuil2: cfg.seuil2 || 0, seuil3: cfg.seuil3 || 0,
-        cible: cfg.cible || 0 });
+        cible: cfg.cible || 0, categorie: cfg.categorie || '' });
     });
     // 2. Matériaux manuels non couverts par les blueprints
     Object.keys(configs).sort().forEach(function(key) {
       if (!bpNames[key] && configs[key].source === 'manual') {
         const cfg = configs[key];
         items.push({ name: cfg.name, source: 'manual',
-          seuil1: cfg.seuil1, seuil2: cfg.seuil2, seuil3: cfg.seuil3, cible: cfg.cible || 0 });
+          seuil1: cfg.seuil1, seuil2: cfg.seuil2, seuil3: cfg.seuil3,
+          cible: cfg.cible || 0, categorie: cfg.categorie || '' });
       }
     });
 
@@ -1697,7 +1705,7 @@ function getMaterialsCatalogue(token) {
   }
 }
 
-function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token, cible) {
+function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token, cible, categorie) {
   try {
     const session = validateToken(token);
     if (!session || (session.role || 0) < 1) return { success: false, message: 'Accès refusé.' };
@@ -1705,7 +1713,7 @@ function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token, cible) {
     let sheet = _getSheet('MATERIALS_CONFIG');
     if (!sheet) {
       sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('MATERIALS_CONFIG');
-      sheet.appendRow(['Name', 'Source', 'Seuil1', 'Seuil2', 'Seuil3', 'Cible']);
+      sheet.appendRow(['Name', 'Source', 'Seuil1', 'Seuil2', 'Seuil3', 'Cible', 'Categorie']);
     }
     const nameLow = String(name).toLowerCase();
     if (sheet.getLastRow() > 1) {
@@ -1713,11 +1721,12 @@ function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token, cible) {
       for (var i = 0; i < data.length; i++) {
         if (String(data[i][0]).toLowerCase() === nameLow) {
           sheet.getRange(i + 2, 3, 1, 4).setValues([[Number(seuil1)||0, Number(seuil2)||0, Number(seuil3)||0, Number(cible)||0]]);
+          if (categorie !== undefined) sheet.getRange(i + 2, 7).setValue(String(categorie));
           return { success: true };
         }
       }
     }
-    // Première config pour ce matériau (blueprint) — on détermine la source
+    // Première config pour ce matériau — on détermine la source
     const bpSheet = _getSheet('WIKI_BLUEPRINTS');
     let source = 'manual';
     if (bpSheet && bpSheet.getLastRow() > 1) {
@@ -1729,12 +1738,12 @@ function saveMaterialSeuils(name, seuil1, seuil2, seuil3, token, cible) {
         }
       }
     }
-    sheet.appendRow([String(name), source, Number(seuil1)||0, Number(seuil2)||0, Number(seuil3)||0, Number(cible)||0]);
+    sheet.appendRow([String(name), source, Number(seuil1)||0, Number(seuil2)||0, Number(seuil3)||0, Number(cible)||0, String(categorie||'')]);
     return { success: true };
   } catch(e) { return { success: false, message: String(e) }; }
 }
 
-function addManualMaterial(name, token) {
+function addManualMaterial(name, token, categorie) {
   try {
     const session = validateToken(token);
     if (!session || (session.role || 0) < 1) return { success: false, message: 'Accès refusé.' };
@@ -1745,7 +1754,7 @@ function addManualMaterial(name, token) {
     let sheet = _getSheet('MATERIALS_CONFIG');
     if (!sheet) {
       sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('MATERIALS_CONFIG');
-      sheet.appendRow(['Name', 'Source', 'Seuil1', 'Seuil2', 'Seuil3']);
+      sheet.appendRow(['Name', 'Source', 'Seuil1', 'Seuil2', 'Seuil3', 'Cible', 'Categorie']);
     }
     if (sheet.getLastRow() > 1) {
       const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
@@ -1754,7 +1763,7 @@ function addManualMaterial(name, token) {
           return { success: false, message: 'Ce matériau existe déjà.' };
       }
     }
-    sheet.appendRow([name, 'manual', 0, 0, 0]);
+    sheet.appendRow([name, 'manual', 0, 0, 0, 0, String(categorie||'')]);
     return { success: true };
   } catch(e) { return { success: false, message: String(e) }; }
 }
@@ -1777,6 +1786,81 @@ function deleteMaterial(name, token) {
       }
     }
     return { success: false, message: 'Matériau introuvable.' };
+  } catch(e) { return { success: false, message: String(e) }; }
+}
+
+// ============================================
+// CATÉGORIES DE STOCK
+// STOCK_CATEGORIES sheet: Name(0), UnitType(1)   UnitType: 'cSCU' | 'unité'
+// ============================================
+
+function _getCategoryUnitMap() {
+  const map = {};
+  const sheet = _getSheet('STOCK_CATEGORIES');
+  if (sheet && sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues().forEach(function(r) {
+      if (r[0]) map[String(r[0]).toLowerCase()] = String(r[1] || 'cSCU');
+    });
+  }
+  return map;
+}
+
+function getCategories(token) {
+  try {
+    const session = validateToken(token);
+    if (!session || (session.role || 0) < 1) return { error: 'Accès refusé.' };
+    const sheet = _getSheet('STOCK_CATEGORIES');
+    const cats = [];
+    if (sheet && sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues().forEach(function(r) {
+        if (r[0]) cats.push({ name: String(r[0]), unitType: String(r[1] || 'cSCU') });
+      });
+    }
+    cats.sort(function(a,b){ return a.name.localeCompare(b.name,'fr'); });
+    return { categories: cats };
+  } catch(e) { return { error: String(e) }; }
+}
+
+function saveCategory(name, unitType, token) {
+  try {
+    const session = validateToken(token);
+    if (!session || (session.role || 0) < 1) return { success: false, message: 'Accès refusé.' };
+    name = String(name).trim();
+    if (!name) return { success: false, message: 'Nom requis.' };
+    unitType = (unitType === 'unité') ? 'unité' : 'cSCU';
+    let sheet = _getSheet('STOCK_CATEGORIES');
+    if (!sheet) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('STOCK_CATEGORIES');
+      sheet.appendRow(['Name', 'UnitType']);
+    }
+    if (sheet.getLastRow() > 1) {
+      const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+      for (var i = 0; i < data.length; i++) {
+        if (String(data[i][0]).toLowerCase() === name.toLowerCase()) {
+          sheet.getRange(i + 2, 2).setValue(unitType);
+          return { success: true };
+        }
+      }
+    }
+    sheet.appendRow([name, unitType]);
+    return { success: true };
+  } catch(e) { return { success: false, message: String(e) }; }
+}
+
+function deleteCategory(name, token) {
+  try {
+    const session = validateToken(token);
+    if (!session || (session.role || 0) < 1) return { success: false, message: 'Accès refusé.' };
+    const sheet = _getSheet('STOCK_CATEGORIES');
+    if (!sheet || sheet.getLastRow() <= 1) return { success: false, message: 'Catégorie introuvable.' };
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][0]).toLowerCase() === String(name).toLowerCase()) {
+        sheet.deleteRow(i + 2);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Catégorie introuvable.' };
   } catch(e) { return { success: false, message: String(e) }; }
 }
 
