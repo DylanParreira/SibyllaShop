@@ -53,6 +53,7 @@
         .request-card:hover { border-color:rgba(255,255,255,.15); }
         .request-card.status-discussion { border-color:rgba(64,224,255,.2); }
         .request-card.status-accepte { border-color:rgba(79,255,176,.2); }
+        .request-card.status-rdv { border-color:rgba(77,163,255,.25); }
         .rc-header { display:flex; align-items:flex-start; gap:1rem; margin-bottom:.8rem; flex-wrap:wrap; }
         .rc-member { font-family:'Rajdhani',sans-serif; font-size:1rem; font-weight:700; color:var(--sib-accent1); }
         .rc-item   { font-size:1rem; color:var(--sib-text); font-weight:600; }
@@ -65,6 +66,7 @@
         .badge-discussion { color:var(--sib-accent1); background:rgba(64,224,255,.1);  border:1px solid rgba(64,224,255,.3); }
         .badge-accepte    { color:var(--sib-green);   background:rgba(79,255,176,.1);   border:1px solid rgba(79,255,176,.3); }
         .badge-refuse     { color:var(--sib-red);     background:rgba(255,107,107,.1);  border:1px solid rgba(255,107,107,.3); }
+        .badge-rdv        { color:var(--sib-accent2); background:rgba(77,163,255,.1);   border:1px solid rgba(77,163,255,.3); }
         .badge-crafte     { color:var(--sib-muted);   background:rgba(255,255,255,.05); border:1px solid var(--sib-border); }
         .badge-annule     { color:rgba(159,182,215,.5); background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); }
         .badge-custom     { color:var(--sib-gold); font-size:.65rem; background:rgba(250,218,125,.08); border:1px solid rgba(250,218,125,.2); }
@@ -354,11 +356,12 @@
             var bc = r.statut==='En attente'    ? 'badge-attente'
                    : r.statut==='En discussion' ? 'badge-discussion'
                    : r.statut==='Accepté'       ? 'badge-accepte'
+                   : r.statut==='RDV planifié'  ? 'badge-rdv'
                    : r.statut==='Refusé'        ? 'badge-refuse'
                    : r.statut==='Annulé'        ? 'badge-annule'
                    : 'badge-crafte';
 
-            var statusCardClass = r.statut==='En discussion' ? ' status-discussion' : r.statut==='Accepté' ? ' status-accepte' : '';
+            var statusCardClass = r.statut==='En discussion' ? ' status-discussion' : r.statut==='Accepté' ? ' status-accepte' : r.statut==='RDV planifié' ? ' status-rdv' : '';
             var customBadge = r.customRecipe ? ' <span class="badge badge-custom">Perso</span>' : '';
             var qLabel = r.prioriteQualite === 'ASC' ? '⬇ Moindres' : '⬆ Meilleures';
 
@@ -382,7 +385,7 @@
 
             // Reservation details
             var detailHtml = '';
-            if (r.statut === 'Accepté' && r.reservationDetails && r.reservationDetails.length > 0) {
+            if ((r.statut === 'Accepté' || r.statut === 'RDV planifié') && r.reservationDetails && r.reservationDetails.length > 0) {
                 var lines = r.reservationDetails.map(function(d) {
                     var qc = d.qualite >= 900 ? '#fada7d' : d.qualite >= 750 ? '#00ff88' : d.qualite >= 500 ? '#DBE8FF' : d.qualite >= 250 ? '#ffa500' : '#ff4444';
                     return '<span style="color:' + qc + ';font-weight:700">Q' + d.qualite + '</span> ' + esc(d.resource) + ' ×' + d.qty;
@@ -415,7 +418,11 @@
                 actionsHtml += '<button class="btn-action btn-refuse" onclick="refuseReq(\'' + esc(r.id) + '\')">✗ Refuser</button>';
             }
             if (r.statut === 'Accepté') {
-                actionsHtml += '<button class="btn-action btn-craft" onclick="markCrafte(\'' + esc(r.id) + '\')">⚗️ Marquer Crafté</button>';
+                actionsHtml += '<button class="btn-action btn-craft" onclick="prendreRDV(\'' + esc(r.id) + '\')">📅 Prendre RDV</button>';
+                actionsHtml += '<button class="btn-action btn-refuse" onclick="refuseReq(\'' + esc(r.id) + '\')">✗ Annuler</button>';
+            }
+            if (r.statut === 'RDV planifié') {
+                actionsHtml += '<button class="btn-action btn-craft" onclick="cloturerReq(\'' + esc(r.id) + '\')">🔒 Clôturer</button>';
                 actionsHtml += '<button class="btn-action btn-refuse" onclick="refuseReq(\'' + esc(r.id) + '\')">✗ Annuler</button>';
             }
             actionsHtml += '</div>';
@@ -470,10 +477,20 @@
             .updateCraftRequest(id, 'Refusé', note, TOKEN);
     }
 
-    function markCrafte(id) {
+    function prendreRDV(id) {
         google.script.run
             .withSuccessHandler(function(r) {
-                if (r.success) { showToast('Blueprint marqué comme réalisé !', 'success'); loadRequests(); loadReport(); }
+                if (r.success) { showToast('RDV planifié — notification envoyée !', 'success'); loadRequests(); loadReport(); }
+                else showToast(r.message || 'Erreur.', 'error');
+            })
+            .withFailureHandler(function(){ showToast('Erreur serveur.','error'); })
+            .updateCraftRequest(id, 'RDV planifié', '', TOKEN);
+    }
+
+    function cloturerReq(id) {
+        google.script.run
+            .withSuccessHandler(function(r) {
+                if (r.success) { showToast('Demande clôturée !', 'success'); loadRequests(); loadReport(); }
                 else showToast(r.message || 'Erreur.', 'error');
             })
             .withFailureHandler(function(){ showToast('Erreur serveur.','error'); })

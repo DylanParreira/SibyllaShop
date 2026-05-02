@@ -1097,15 +1097,15 @@ function updateCraftRequest(id, statut, noteAdmin, token) {
           sheet.getRange(row, 11).setValue(date);
           sheet.getRange(row, 12).setValue(session.displayName || session.username);
         }
-        // Release reservation if previously Accepté
-        if (oldStatut === 'Accepté' && (statut === 'Refusé' || statut === 'En attente' || statut === 'En discussion')) {
+        // Release reservation if previously Accepté or RDV planifié
+        if ((oldStatut === 'Accepté' || oldStatut === 'RDV planifié') && (statut === 'Refusé' || statut === 'En attente' || statut === 'En discussion')) {
           const customRecipe = _safeParse(data[i][17], null);
           _updateStockReservation(String(data[i][4]), Number(data[i][6]) || 1, -1, String(data[i][12] || 'DESC'), null, customRecipe);
           sheet.getRange(row, 14).setValue('');
           sheet.getRange(row, 15).setValue(false);
           sheet.getRange(row, 16).setValue(false);
         }
-        if (statut === 'Crafté' && oldStatut === 'Accepté') {
+        if (statut === 'Crafté' && (oldStatut === 'Accepté' || oldStatut === 'RDV planifié')) {
           const customRecipe = _safeParse(data[i][17], null);
           _updateStockReservation(String(data[i][4]), Number(data[i][6]) || 1, -1, String(data[i][12] || 'DESC'), null, customRecipe);
           sheet.getRange(row, 14).setValue('');
@@ -1113,16 +1113,24 @@ function updateCraftRequest(id, statut, noteAdmin, token) {
 
         // [DISCORD BOT] Notifier le demandeur du changement de statut
         if (statut !== oldStatut) {
-          const nomItem    = String(data[i][5] || data[i][4] || '?');
-          const demandeur  = String(data[i][2]);
-          const statusEmoji = { 'Accepté': '✅', 'Refusé': '❌', 'Crafté': '🎉', 'En discussion': '💬', 'En attente': '⏳' };
-          const emoji = statusEmoji[statut] || '🔔';
-          _discordNotifyUser(demandeur,
-            emoji + ' **Mise à jour de ta demande de craft**\n' +
-            'Item : **' + nomItem + '**\n' +
-            'Nouveau statut : **' + statut + '**' +
-            (noteAdmin ? '\nNote : ' + String(noteAdmin).substring(0, 300) : '')
-          );
+          const nomItem   = String(data[i][5] || data[i][4] || '?');
+          const demandeur = String(data[i][2]);
+          if (statut === 'RDV planifié') {
+            _discordNotifyUser(demandeur,
+              '📅 **Ta demande de Blueprint est validée !**\n' +
+              'Item : **' + nomItem + '**\n' +
+              'Merci de te rendre à **CRU-L1 Ambitious Dream Station** dans le système **Stanton** pour récupérer ton craft.'
+            );
+          } else {
+            const statusEmoji = { 'Accepté': '✅', 'Refusé': '❌', 'Crafté': '🎉', 'En discussion': '💬', 'En attente': '⏳' };
+            const emoji = statusEmoji[statut] || '🔔';
+            _discordNotifyUser(demandeur,
+              emoji + ' **Mise à jour de ta demande de craft**\n' +
+              'Item : **' + nomItem + '**\n' +
+              'Nouveau statut : **' + statut + '**' +
+              (noteAdmin ? '\nNote : ' + String(noteAdmin).substring(0, 300) : '')
+            );
+          }
         }
 
         return { success: true };
