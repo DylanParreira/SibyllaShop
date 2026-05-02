@@ -1828,6 +1828,39 @@ function deleteMaterial(name, token) {
 // STOCK_CATEGORIES sheet: Name(0), UnitType(1)   UnitType: 'cSCU' | 'unité'
 // ============================================
 
+// Fonction de debug — à lancer depuis l'éditeur GAS (Exécuter > debugCraftDolivine)
+function debugCraftDolivine() {
+  var catUnitMap   = _getCategoryUnitMap();
+  var unitFactors  = _getResourceUnitFactors();
+  var stockMap     = _buildStockMap();
+
+  Logger.log('=== STOCK_CATEGORIES (catUnitMap) ===');
+  Logger.log(JSON.stringify(catUnitMap));
+
+  Logger.log('=== MATERIALS_CONFIG pour Dolivine ===');
+  var cfgSheet = _getSheet('MATERIALS_CONFIG');
+  if (cfgSheet && cfgSheet.getLastRow() > 1) {
+    cfgSheet.getRange(2, 1, cfgSheet.getLastRow() - 1, 7).getValues().forEach(function(r) {
+      if (String(r[0]).toLowerCase() === 'dolivine') Logger.log('Trouvé: ' + JSON.stringify(r));
+    });
+  }
+
+  Logger.log('=== STOCK rows pour Dolivine ===');
+  var stockSheet = _getSheet('STOCK');
+  if (stockSheet && stockSheet.getLastRow() > 1) {
+    stockSheet.getRange(2, 1, stockSheet.getLastRow() - 1, 5).getValues().forEach(function(r) {
+      if (String(r[2]).toLowerCase() === 'dolivine') Logger.log('Trouvé: ' + JSON.stringify(r));
+    });
+  }
+
+  var factor = unitFactors['dolivine'] !== undefined ? unitFactors['dolivine'] : 100;
+  Logger.log('=== RÉSULTAT ===');
+  Logger.log('unitFactors["dolivine"] = ' + unitFactors['dolivine'] + '  (undefined = fallback 100)');
+  Logger.log('stockMap["dolivine"]    = ' + stockMap['dolivine']);
+  Logger.log('Quantité requise        = 4 × ' + factor + ' = ' + (4 * factor));
+  Logger.log('Craftable               = ' + ((stockMap['dolivine'] || 0) >= 4 * factor));
+}
+
 function _getCategoryUnitMap() {
   const map = {};
   const sheet = _getSheet('STOCK_CATEGORIES');
