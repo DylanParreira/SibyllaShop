@@ -377,7 +377,7 @@
         if (activeCat === 'all') {
             stockData.categories.forEach(function(cat) {
                 cat.items.forEach(function(item) {
-                    if (item.alertLevel <= 0) return;
+                    if (item.alertLevel <= 1) return;
                     if (search && item.name.toLowerCase().indexOf(search) === -1) return;
                     alertItems.push(item);
                 });
