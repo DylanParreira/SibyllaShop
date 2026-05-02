@@ -447,7 +447,7 @@
         var qualityHtml = '';
         if (item.bestEntry) {
             var ql = getQualiteInfo(item.bestEntry.qualite);
-            qualityHtml += '<span class="best-entry ' + ql.cls + '">★ ' + item.bestEntry.quantite + ' ' + esc(item.bestEntry.unite) + ' · ' + ql.label + '</span>';
+            qualityHtml += '<span class="best-entry ' + ql.cls + '">★ ' + item.bestEntry.quantite + ' ' + displayUnit(item.bestEntry.unite, item.bestEntry.quantite) + ' · ' + ql.label + '</span>';
         }
         if (item.minorTotal > 0) {
             qualityHtml += '<span class="minor-entry">+ <span class="minor-qty">' + item.minorTotal + 'x</span> qualité moindre</span>';
@@ -463,7 +463,7 @@
             var pCls = pct < 30 ? 'p-crit' : pct < 60 ? 'p-low' : pct < 90 ? 'p-med' : 'p-good';
             progressHtml = '<div class="progress-wrap">' +
                 '<div class="progress-labels">' +
-                '<span class="progress-current">' + item.totalAvail + ' / ' + item.cible + ' ' + (item.unite || 'cSCU') + '</span>' +
+                '<span class="progress-current">' + item.totalAvail + ' / ' + item.cible + ' ' + displayUnit(item.unite, item.totalAvail) + '</span>' +
                 '<span class="progress-target">' + pct + '%</span>' +
                 '</div>' +
                 '<div class="progress-bar"><div class="progress-fill ' + pCls + '" style="width:' + pct + '%"></div></div>' +
@@ -512,6 +512,11 @@
 
     function esc(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function displayUnit(unitType, qty) {
+        if (!unitType || unitType !== 'unité') return unitType || 'cSCU';
+        return (qty !== undefined && qty === 1) ? 'gemme' : 'gemmes';
     }
 
     function toggleViewDropdown() {

@@ -579,7 +579,7 @@
         categoriesData.forEach(function(c){ catUnitMap[c.name.toLowerCase()] = c.unitType; });
         container.innerHTML = catOrder.map(function(cat) {
             var rows = catMap[cat];
-            var unitLabel = catUnitMap[cat.toLowerCase()] || 'cSCU';
+            var unitLabel = displayUnit(catUnitMap[cat.toLowerCase()] || 'cSCU');
             return '<div class="cat-section">' +
                 '<div class="cat-section-title">' + esc(cat) + ' <span class="cat-count">' + rows.length + '</span>' +
                 '<span style="font-size:.7rem;font-weight:700;color:var(--sib-muted);letter-spacing:.05em;margin-left:.4rem;text-transform:none">' + esc(unitLabel) + '</span></div>' +
@@ -825,6 +825,10 @@
 
     function showToast(msg,type){ var t=document.getElementById('toast'); t.textContent=msg; t.className='toast '+(type||'success'); t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},3000); }
     function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function displayUnit(unitType, qty) {
+        if (!unitType || unitType !== 'unité') return unitType || 'cSCU';
+        return (qty !== undefined && qty === 1) ? 'gemme' : 'gemmes';
+    }
 
     document.getElementById('stockModal').addEventListener('click', function(e){ if(e.target===this)closeStockModal(); });
 
@@ -878,7 +882,7 @@
             var unitCls = c.unitType === 'unité' ? 'unite' : 'cscu';
             return '<span class="cat-chip">' +
                 '<span class="cat-chip-name">'+esc(c.name)+'</span>' +
-                '<span class="cat-chip-unit '+unitCls+'">'+esc(c.unitType)+'</span>' +
+                '<span class="cat-chip-unit '+unitCls+'">'+displayUnit(c.unitType)+'</span>' +
                 '<button class="cat-chip-del" onclick="deleteCategory(\''+esc(c.name)+'\')" title="Supprimer">✕</button>' +
                 '</span>';
         }).join('');
@@ -968,7 +972,7 @@
                 : '<span class="wm-badge" style="color:rgba(159,182,215,.35);border:1px solid rgba(255,255,255,.06)">—</span>';
             var unitBadge = unitType
                 ? (unitType === 'unité'
-                    ? '<span class="wm-badge" style="background:rgba(250,218,125,.1);color:var(--sib-gold);border:1px solid rgba(250,218,125,.2)">unité</span>'
+                    ? '<span class="wm-badge" style="background:rgba(250,218,125,.1);color:var(--sib-gold);border:1px solid rgba(250,218,125,.2)">gemmes</span>'
                     : '<span class="wm-badge" style="background:rgba(64,224,255,.08);color:var(--sib-accent1);border:1px solid rgba(64,224,255,.15)">cSCU</span>')
                 : '';
             var seuilsHtml =
