@@ -670,7 +670,7 @@ function _buildStockMap() {
 function getStockSummary(token) {
   const session = validateToken(token);
   if (!session) return { error: 'Connexion requise.' };
-  return { summary: _buildStockMap() };
+  return { summary: _buildStockMap(), unitFactors: _getResourceUnitFactors() };
 }
 
 function _buildRecipesMap() {
